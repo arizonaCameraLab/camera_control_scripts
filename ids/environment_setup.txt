@@ -1,0 +1,25 @@
+This setup works for Intel Up extreme single board computer with Ubuntu 22.04. 
+The camera used is IDS UI-3590LE.
+Minghao Hu, organized based on own experiment notes in 2022 April, 2022 Dec 14.
+
+Totally follow IDS's official instruction: https://www.ids-imaging.us/files/downloads/ids-software-suite/readme/readme-ids-software-suite-linux-4.95.2_EN.html
+
+1. Install dependency
+sudo apt-get install debconf libc6 libomp5 libstdc++6 libqt5core5a libqt5xml5 libqt5gui5 libqt5widgets5 libqt5concurrent5 libqt5opengl5 libcap2 libusb-1.0-0 cmake gtk2-engines-pixbuf
+
+2. Install IDS Software Suite
+Unzip the tgz file downloaded, get a bunch of ueye*.deb files. Install them all.# navigate to the unzipped .deb files
+sudo dpkg -i ueye-common*.deb #needs to be installed first
+sudo dpkg -i ueye*.deb #should exclude ueye-common
+
+3. Start camera daemon
+sudo systemctl start ueyeethdrc #might not that useful
+sudo systemctl start ueyeusbdrc
+
+Now connect USB camera. The camera's instruction LED should be green instead of red. Open the GUI application, IDS Camera Manager to check whether the program is working normally.
+
+4. Install pyueye package
+pip3 install pyueye
+
+5. Install opencv
+pip3 install opencv-python (already installed)

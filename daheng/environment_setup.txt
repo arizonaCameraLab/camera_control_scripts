@@ -1,0 +1,17 @@
+This setup is tested on a Intel Up Extreme single board computer with Ubuntu 22.04 OS. 
+The camera tested is DaHeng VEN-830-22U3M.
+Minghao Hu, 2022 Dec 14.
+
+DaHeng's SDK/API/Manual can be found at https://www.get-cameras.com/requestdownload. 
+1. Install DaHeng SDK
+Download the newest SDK package (currently Galaxy_Linux x86_Gige U3_32bits 64bits_1.3.2206.9161.tar.gz) from DaHeng's site. Uncompress, follow the guide to install that. Remember to put the installation file to the target folder. I choose ~/apps/
+
+2. Create conda environment 
+DaHeng's document suggests using Python 3.5, but I found that newest one still works. Below are the commands.
+sudo apt-get install libffi-dev
+conda create -n daheng python numpy scipy pillow h5py
+conda activate daheng
+pip install opencv-python PyQt5 # need to install these two via pip. conda's opencv can not show window, and PyQt5 needs to agree with opencv, otherwise there will be QObject::moveToThread error.
+    
+3. Install DaHeng Python API
+Download the newest Python API (currently Galaxy_Linux_Python_2.0.2106.9041.tar.gz) from DaHeng's site. Follow the guide, but at the last step, don't use sudo. The package will be installed into the conda environment (keep an eye on the installed location of the .egg file), but can not be seen conda list, since it's not installed/managed by conda.
