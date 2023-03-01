@@ -1,0 +1,20 @@
+{
+    "exposure":300,
+    "gain": 1,
+    "frame_rate": 30,
+    "aois": [
+        [0, 1280, 0, 800],
+        [0, 1280, 0, 800],
+        [0, 1280, 0, 800],
+        [0, 1280, 0, 800]
+    ],
+    "cell_w": 320,
+    "cell_h": 200,
+    "tile": [
+        [-1, 2, 1 ,-1],
+        [3, -1, -1, 0]
+    ],
+    "rots": [true, true, true, true],
+    "name_f": "frames/frame_{:s}",
+    "date_f": "%Y-%m-%d_%H-%M-%S.%f"
+}

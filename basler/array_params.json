@@ -2,7 +2,7 @@
     "40221185": {
         "name": "near_0",
 	"index": 0,
-        "PixelFormat": "BayerRG8",
+        "PixelFormat": "BayerBG8",
         "Width": 3840,
         "Height": 2160,
         "OffsetX": 8,
