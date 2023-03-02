@@ -1,61 +1,32 @@
 """
-Workbench for Basler array camera capturing. 
-By Minghao, 2023 Feb
-I actually prefer underscore names, but the sample codes are written in camel naming. I'll use camel.
+Codes to configure Basler camera array
+By Minghao, 2023 Mar
+
+check the notes in __init__.py for some overall ideas.
+
+Camera configuration logic:
+A json file contains all the configurations needed for a camera array.
+Cameras are uniquely labeled with its serial number
+That json file might change while the cameras livestreams, and that change should be applied in real time.
+Minimal changes should be made to cameras. After loading, every parameter will be compared with the cached parameter. Only the changed one will be applied.
+
+Known issue:
+1. Bayer sensor pixel format may change after reversing x/y, changing offset x/y, or changing width/height. That changes automatically, and won't be reflected in cached parameters or the parameter file. A warning will be sent.
+2. Some parameters can't be changed if the camera is grabbing. Stopping then restarting the grabbing would change its grabbing stragergy to latest-only. A warning will be sent.
 """
 
-import os
-import sys
-import argparse
 import logging
 from logging import critical, error, info, warning, debug
 import time
-from datetime import datetime
 import pathlib
 import json
-import copy
 
 import numpy as np
-import cv2 as cv
 
 from pypylon import pylon, genicam
 
 ########################################
-### Argument parsing and logging setup
-########################################
-# logging level definition: 
-# critical: program terminates and no way to handle. E.g. no-catch exception, damaging if not stopped
-# error: error, but the program may keep running. E.g. catched exception, ignored error input/result
-# warning: not an error but not working as the user demands. E.g.: invalid input auto corrected
-# info: some expected non-straightforward handling. E.g.: lazy loading, initial test grabbing
-# debug: expected, as demanded, straightforward processes. Detailed processes E.g.: how many time a frame waitted, 
-def parseArguments():
-    """
-    Read arguments from the command line
-    """
-    parser = argparse.ArgumentParser()
-    parser.add_argument('-p', '--params', type=str, default='array_params.json',
-                        help='The json file holding the array camera parameters.')
-    parser.add_argument('-m', '--mode', type=str, default='disp',
-                        help='Script mode. Choose from disp/grab/dryrun, meaning display/grab/neither')
-    parser.add_argument('-n', '--amount', type=int, default=5,
-                        help='Frame amount to save, 0 for manual stop. Default 5. Ignored when disp/dryrun.')
-    parser.add_argument('-f', '--folder', type=str, default='array_cap',
-                        help='saving folder. Default \'array_cap\'. Create if not exist. Ignored when disp/dryrun.')
-    parser.add_argument('-w', '--window_width', type=int, default=1280,
-                        help='Display window width in pixels. Positive. Default 1280. Ignored when grab/dryrun.')
-    parser.add_argument('-v', '--verbose', type=int, default=2, 
-                        help='Verbosity of logging: 0-critical, 1-error, 2-warning, 3-info, 4-debug')
-    args = parser.parse_args()
-    
-    vTable = {0: logging.CRITICAL, 1: logging.ERROR, 2: logging.WARNING, 
-              3: logging.INFO, 4: logging.DEBUG}
-    logging.basicConfig(format='%(message)s', level=vTable[args.verbose], stream=sys.stdout)
-    
-    return args
-
-########################################
-### Load and refresh parameter from file
+### File loader with change detector
 ########################################
 def jsonLoadFunc(plp):
     """
@@ -93,12 +64,77 @@ class RealTimeFileLoader():
         debug('File {} loaded at {}'.format(self.lastLoadTime, self.plp))
         return x
         
+def validArrayParamsSn(arrayParams, arrayParamsCache):
+    """
+    Return False if arrayParams uses different serial numbers 
+    (SN, which is used as keys for the dictionary) 
+    """
+    kList = sorted(arrayParams.keys())
+    kListCache = sorted(arrayParamsCache.keys())
+    return kList == kListCache
+    
+def validArrayParamsIndex(arrayParams, arrayParamsCache):
+    """
+    Return False if arrayParams changes the order of cameras 
+    """
+    kList = arrayParams.keys()
+    indList = [arrayParams[k]['index'] for k in kList]
+    indListCache = [arrayParamsCache[k]['index'] for k in kList]
+    return indList == indListCache
+    
+########################################
+### Enumerate and pick cameras
+########################################
+def pickRequiredCameras(tlFactory, arrayParams):
+    """
+    This function will enumerate all cameras within available via
+    the tlFactory (transport layer factory), then pick out cameras
+    requested in the arrayParams (array camera parameters) in order.
+    A list of Instant Camera objects will be returned.
+    Note that cameras are labeled with serial number
+    An error will be thrown if
+        no camera found
+        one camera does not gives serial number
+        requested camera is not found
+    """
+    # Get all attached devices and exit application if no device is found.
+    diList = tlFactory.EnumerateDevices() # device info list
+    if len(diList) == 0:
+        raise pylon.RuntimeException('No camera present.')
+
+    # retrive the serial numbers of devices
+    # for all accessible properties, check 
+    # https://docs.baslerweb.com/pylonapi/cpp/class_pylon_1_1_c_device_info
+    devSnList = []
+    for di in diList:
+        if di.IsSerialNumberAvailable():
+            devSnList.append(di.GetSerialNumber())
+        else:
+            raise pylon.RuntimeException('One {} camera\'s SN is not available.'.format(di.GetModelName()))
+
+    # validate and sort required devices
+    sortedDiList = ['' for _ in arrayParams.keys()]
+    for reqSn in arrayParams.keys():
+        if not reqSn in devSnList:
+            raise pylon.RuntimeException('Device with SN {} is required by array but not attached.'.format(reqSn))
+        sortedDiList[arrayParams[reqSn]['index']] \
+            = diList[devSnList.index(reqSn)]
+
+    ### Create Instant Camera objects and adjust parameters
+    # these adjustable parameters are properties defined in Node maps
+    # use GetNodes() to find all available Nodes
+    camList = [] # instant camera list
+    for di in sortedDiList:
+        camList.append(pylon.InstantCamera(tlFactory.CreateDevice(di)))
+        
+    return camList
 
 ########################################
-### Camera configuration functions
+### Camera "in-file" feature configuration
 ########################################
 nonStopParamList = ('ExposureTime', 'Gain')
 stopParamList = ('Width', 'Height', 'OffsetX', 'OffsetY', 'rot180', 'PixelFormat')
+
 def _checkCacheDeco(func):
     """
     Function decorator to check new value and cached value before setting a camera parameter. 
@@ -148,8 +184,8 @@ def _breakGrabbingWhenNeeded(func):
             cam.StopGrabbing()
             func(cam, camName, paramName, v)
             cam.StartGrabbing(pylon.GrabStrategy_LatestImageOnly)
-            warning('Assume that only in livestream mode there will be breaks. Thus using latest.' \
-                    + 'Should read and keep the same strategy.')
+            warning('Stop and restart grabbing to change a parameter. ' \
+                    + 'Grabbing stratergy changed to LatestImageOnly')
     return inner
 
 def _setCamNumValue(cam, camName, paramName, v):
@@ -181,6 +217,8 @@ def _setCamNumValue(cam, camName, paramName, v):
     # set value
     tgtV.SetValue(corV)
     debug('Set {}\'s {} to {}'.format(camName, tgtV.GetNode().Name, corV))
+    if ('Bayer' in cam.PixelFormat.ToString()) and isinstance(tgtV, genicam.IInteger):
+        warning('Bayer sensor pixel format may change after changing offset x/y, or changing width/height.')
             
 def _setCamRot(cam, camName, v):
     """
@@ -192,6 +230,8 @@ def _setCamRot(cam, camName, v):
     cam.ReverseX.SetValue(v)
     cam.ReverseY.SetValue(v)
     debug('Set {}\'s rot180 to {}'.format(camName, v))
+    if 'Bayer' in cam.PixelFormat.ToString():
+    	warning('Bayer sensor pixel format may change after reversing x/y.')
     
 def _setCamPixelFormat(cam, camName, v):
     """
@@ -227,7 +267,7 @@ def _setCamParam(cam, camName, paramName, v):
     else:
         _setCamNumValue(cam, camName, paramName, v)
 
-def setCamParamBundle(cam, param, paramCache):
+def setCamParams(cam, params, paramsCache):
     """
     This function would set some concerned parameters of an instant camera.
     Supports increamental methods. If paramCache is not None, the function
@@ -236,116 +276,41 @@ def setCamParamBundle(cam, param, paramCache):
     The camera object has to be opened
     """
     # dummy cache if needed
-    if paramCache is None:
-        info('Dummy paramCache used for {}'.format(param['name']))
-        paramCache = {}
-        for k in param.keys():
-            paramCache[k] = None
+    if paramsCache is None:
+        info('Dummy paramCache used for {}'.format(params['name']))
+        paramsCache = {}
+        for k in params.keys():
+            paramsCache[k] = None
     
     # set parameters one by one
     for paramName in nonStopParamList+stopParamList:
-        _setCamParam(cam, param['name'], paramName, param[paramName], paramCache[paramName])
-
-
-########################################
-### Main function
-########################################
-def main(args):
-    ### prepare parameter file
-    arrayParamsLoader = RealTimeFileLoader(args.params, jsonLoadFunc)
-    arrayParams = arrayParamsLoader.load()
-
-    ### enumerate cameras
-    # Get the transport layer factory.
-    tlFactory = pylon.TlFactory.GetInstance()
-
-    # Get all attached devices and exit application if no device is found.
-    diList = tlFactory.EnumerateDevices() # device info list
-    if len(diList) == 0:
-        raise pylon.RuntimeException('No camera present.')
-
-    # retrive the serial numbers of devices
-    # for all accessible properties, check 
-    # https://docs.baslerweb.com/pylonapi/cpp/class_pylon_1_1_c_device_info
-    devSnList = []
-    for di in diList:
-        if di.IsSerialNumberAvailable():
-            devSnList.append(di.GetSerialNumber())
-        else:
-            raise pylon.RuntimeException('One {} camera\'s SN is not available.'.format(di.GetModelName()))
-
-    # validate and sort required devices
-    sortedDiList = ['' for _ in arrayParams.keys()]
-    for reqSn in arrayParams.keys():
-        if not reqSn in devSnList:
-            raise pylon.RuntimeException('Device with SN {} is required by array but not attached.'.format(reqSn))
-        sortedDiList[arrayParams[reqSn]['index']] \
-            = diList[devSnList.index(reqSn)]
-
-    ### Create Instant Camera objects and adjust parameters
-    # these adjustable parameters are properties defined in Node maps
-    # check 
-    camList = [] # instant camera list
-    for di in sortedDiList:
-        camList.append(pylon.InstantCamera(tlFactory.CreateDevice(di)))
-
-    for cam in camList:
-        params = arrayParams[cam.GetDeviceInfo().GetSerialNumber()]
-        cam.Open()
-        setCamParamBundle(cam, params, None)
-
-    ### livestream camera 0
-    # converting to opencv bgr format
-    converter = pylon.ImageFormatConverter()
-    converter.OutputPixelFormat = pylon.PixelType_BGR8packed
-    converter.OutputBitAlignment = pylon.OutputBitAlignment_MsbAligned
-    # start grabbing and streaming
-    camera = camList[0]
-    windowName = 'cam ' + arrayParams[camera.GetDeviceInfo().GetSerialNumber()]['name']
-    camera.StartGrabbing(pylon.GrabStrategy_LatestImageOnly)
-    while camera.IsGrabbing():
-        grabResult = camera.RetrieveResult(5000, pylon.TimeoutHandling_ThrowException)
-
-        if grabResult.GrabSucceeded():
-            # Access the image data
-            image = converter.Convert(grabResult)
-            img = image.GetArray()
-            # show image
-            cv.namedWindow(windowName, cv.WINDOW_NORMAL)
-            cv.imshow(windowName, img)
-            # wait for break
-            k = cv.waitKey(1)
-            if k == 27:
-                break
-        grabResult.Release()
+        _setCamParam(cam, params['name'], paramName, params[paramName], paramsCache[paramName])
         
-        # refresh parameters if needed
-        if arrayParamsLoader.changedAfterLastLoad():
-            arrayParamsCache = copy.copy(arrayParams)
-            arrayParams = arrayParamsLoader.load()
-            # need to validate key integrity before working on that
-            for cam in camList:
-                camSn = cam.GetDeviceInfo().GetSerialNumber()
-                params = arrayParams[camSn]
-                paramsCache = arrayParamsCache[camSn]
-                setCamParamBundle(cam, params, paramsCache)
-        
-    # Releasing the resource    
-    camera.StopGrabbing()
-
-    cv.destroyAllWindows()
-
+def configArrayIfParamChanges(camList, arrayParamsLoader, arrayParams):
+    """
+    Check the parameter file via arrayParamsLoader, if changed, reload
+    Validate and compare newly loaded with arrayParams
+    Configure camera array by setting changed parameters
+    Return new arrayParams
+    """
+    # if not changed, simply return original parameters
+    if not arrayParamsLoader.changedAfterLastLoad():
+        return arrayParams
+    # if changed, reload
+    arrayParamsNew = arrayParamsLoader.load()
+    # validate serial number integrity. If not, don't change
+    if not validArrayParamsSn(arrayParamsNew, arrayParams):
+        error('New array camera parameter\'s SN differs with cache. Change rejected.')
+        return arrayParams
+    # validate camera order
+    if not validArrayParamsIndex(arrayParamsNew, arrayParams):
+        warning('New array camera parameter\'s camera order differs with cache.' \
+                + 'Only effective after restarting the program.')
+    # config changed parameters
     for cam in camList:
-        cam.Close()
-
-
-if __name__ == '__main__':
-    args = parseArguments()
-    main(args)
-
-### Archived
-#    nm = cam.GetInstantCameraNodeMap()
-#    nList = nm.GetNodes()
-#    for n in nList:
-#        print(n.GetNode().GetName())
-
+        camSn = cam.GetDeviceInfo().GetSerialNumber()
+        params = arrayParamsNew[camSn]
+        paramsCache = arrayParams[camSn]
+        setCamParams(cam, params, paramsCache) # this will only config change parameters
+    debug('Lazy configured array camera parameters.')
+    return arrayParamsNew

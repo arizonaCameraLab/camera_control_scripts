@@ -8,7 +8,7 @@
         "OffsetX": 8,
         "OffsetY": 8,
         "rot180": true, 
-        "ExposureTime": 15000,
+        "ExposureTime": 30000,
         "Gain": 0, 
         "suffix": null
     }, 
@@ -21,7 +21,7 @@
         "OffsetX": 8,
         "OffsetY": 8,
         "rot180": false, 
-        "ExposureTime": 15000,
+        "ExposureTime": 30000,
         "Gain": 0, 
         "suffix": null
     }, 
@@ -34,7 +34,7 @@
         "OffsetX": 8,
         "OffsetY": 8,
         "rot180": true, 
-        "ExposureTime": 15000,
+        "ExposureTime": 30000,
         "Gain": 0, 
         "suffix": null
     }, 
@@ -47,7 +47,7 @@
         "OffsetX": 8,
         "OffsetY": 8,
         "rot180": false, 
-        "ExposureTime": 15000,
+        "ExposureTime": 30000,
         "Gain": 0, 
         "suffix": null
     }, 
@@ -60,7 +60,7 @@
         "OffsetX": 8,
         "OffsetY": 8,
         "rot180": false, 
-        "ExposureTime": 15000,
+        "ExposureTime": 30000,
         "Gain": 0, 
         "suffix": null
     }, 
@@ -73,7 +73,7 @@
         "OffsetX": 8,
         "OffsetY": 8,
         "rot180": true, 
-        "ExposureTime": 15000,
+        "ExposureTime": 30000,
         "Gain": 0, 
         "suffix": null
     }, 
@@ -86,7 +86,7 @@
         "OffsetX": 8,
         "OffsetY": 8,
         "rot180": true, 
-        "ExposureTime": 15000,
+        "ExposureTime": 30000,
         "Gain": 0, 
         "suffix": null
     }
