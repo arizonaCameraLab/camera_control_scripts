@@ -34,10 +34,16 @@ def parseArguments():
                         help='The json file holding the array camera parameters.')
     parser.add_argument('-m', '--mode', type=str, default='disp',
                         help='Script mode. Choose from disp/grab, meaning display/grab')
+    parser.add_argument('--show_hist', action='store_true',
+                        help='Show pixel value histogram. Only work for livestream.')
+    parser.add_argument('--bins', type=int, default=25,
+                        help='Histogram bin amount. Default 25. Only work for livestream with --show_hist.')
     parser.add_argument('-n', '--amount', type=int, default=5,
-                        help='Frame amount to save, 0 for manual stop. Default 5. Ignored when disp.')
+                        help='Frame amount to save, 0 for manual stop. Default 5. Only work for grabbing.')
+    parser.add_argument('--save_raw', action='store_true',
+                        help='Save unconverted raw image. Only work for grabbing..')
     parser.add_argument('-f', '--folder', type=str, default='array_cap',
-                        help='saving folder. Default \'array_cap\'. Create if not exist. Ignored when disp.')
+                        help='saving folder. Default \'array_cap\'. Create if not exist. Only work for grabbing..')
     parser.add_argument('-v', '--verbose', type=int, default=1, 
                         help='Verbosity of logging: 0-critical, 1-error, 2-warning, 3-info, 4-debug')
     ### parse args
@@ -83,7 +89,9 @@ def main(args):
         while camInd >= 0:
             # the inner loop: grab, show, real-time configure
             camInd, arrayParams = singleCamlivestream(
-                camList, arrayParamsLoader, converter, arrayParams, camInd, showHist=False)
+                camList, arrayParamsLoader, converter, 
+                arrayParams, camInd, 
+                args.show_hist, args.bins)
     
     ### grabbing frames
     elif args.mode == 'grab':
@@ -95,7 +103,7 @@ def main(args):
             frameList = []
             for camInd, cam in enumerate(camList):
                 camName = arrayParams[cam.GetDeviceInfo().GetSerialNumber()]['name']
-                img, chunkDict = chunkGrabOne(cam, converter, camName)
+                img, chunkDict = chunkGrabOne(cam, converter, camName, save_raw=args.save_raw)
                 saveName = '{}_{}_{}'.format(loopNum, camInd, camName)
                 frameList.append([img, chunkDict, saveName])
             loopList.append(frameList)

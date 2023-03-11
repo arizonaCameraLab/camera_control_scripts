@@ -58,13 +58,16 @@ def disableChunk(camera):
 ########################################
 ### chunk grabbing
 ########################################
-def chunkGrabOne(cam, converter, camName, chunkFeatureList=chunkNameList):
+def chunkGrabOne(cam, converter, camName, chunkFeatureList=chunkNameList, save_raw=False):
     """
     Grab one image from cam with already made configurations
     Return converted image, and a json file containing chunk data
     """
-    grabResult = cam.GrabOne(100)
-    img = converter.Convert(grabResult).GetArray()
+    grabResult = cam.GrabOne(500)
+    if save_raw:
+        img = grabResult.GetArray()
+    else:
+        img = converter.Convert(grabResult).GetArray()
     chunkFeatureDict = {}
     for cf in chunkFeatureList:
         if not (hasattr(grabResult, 'Chunk'+cf) \

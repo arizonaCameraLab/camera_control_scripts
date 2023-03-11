@@ -13,16 +13,19 @@ The ugly part is that real-time parameter change happens in the inner loop, thus
 
 Known issue:
 
+Acknoledgement:
+histogram part largely learned from 
+https://github.com/nrsyed/computer-vision/blob/master/real_time_histogram/real_time_histogram.py. 
+The original one is not working, though. I fixed it following 
+https://www.geeksforgeeks.org/how-to-update-a-plot-on-same-figure-during-the-loop/
 """
 
-#import os
-#import sys
 import logging
 from logging import critical, error, info, warning, debug
-#from datetime import datetime
 
-#import numpy as np
+import numpy as np
 import cv2 as cv
+import matplotlib.pyplot as plt
 
 from pypylon import pylon, genicam
 
@@ -47,9 +50,41 @@ def opencvKeyWatcher(x, waitTime=1):
     else:
         warning('Input not accepted. ESC to quit, and 0-6 for camera selection')
         return x
+
+def initHist(bins, lw=3, alpha=0.5):
+    plt.ion() # enable GUI event loop
+    fig, ax = plt.subplots()
+    ax.set_title('Histogram (RGB)')
+    ax.set_xlabel('Bin')
+    ax.set_ylabel('Frequency')
+    lineR, = ax.plot(np.arange(bins), np.zeros((bins,)), c='r', lw=lw, alpha=alpha, label='Red')
+    lineG, = ax.plot(np.arange(bins), np.zeros((bins,)), c='g', lw=lw, alpha=alpha, label='Green')
+    lineB, = ax.plot(np.arange(bins), np.zeros((bins,)), c='b', lw=lw, alpha=alpha, label='Blue')
+    ax.set_xlim(0, bins-1)
+    ax.set_ylim(0, 1)
+    ax.legend()
+    return fig, ax, lineR, lineG, lineB
+    
+def dispHist(frame, bins, fig, ax, lineR, lineG, lineB):
+    # calculate histogram
+    numPixels = np.prod(frame.shape[:2])
+    (r, g, b) = cv.split(frame)
+    histogramR = cv.calcHist([r], [0], None, [bins], [0, 255]) / numPixels
+    histogramG = cv.calcHist([g], [0], None, [bins], [0, 255]) / numPixels
+    histogramB = cv.calcHist([b], [0], None, [bins], [0, 255]) / numPixels
+    # update data value
+    lineR.set_ydata(histogramR)
+    lineG.set_ydata(histogramG)
+    lineB.set_ydata(histogramB)
+    ax.set_ylim(0, max([histogramR.max(), histogramG.max(), histogramB.max()]))
+    # update value and run GUI event
+    fig.canvas.draw()
+    fig.canvas.flush_events()
+    return
     
 def singleCamlivestream(camList, arrayParamsLoader, converter, 
-                        arrayParams, camInd, showHist=False):
+                        arrayParams, camInd, 
+                        showHist, bins):
     """
     Single camera livestream function. Including init, loop, and cleanup.
     The ugly part is that real-time parameter change happens in the inner loop, 
@@ -64,6 +99,8 @@ def singleCamlivestream(camList, arrayParamsLoader, converter,
     liveWindowName = 'cam{} '.format(camInd) + camName
     histWindowName = liveWindowName + ' histogram'
     cam.StartGrabbing(pylon.GrabStrategy_LatestImageOnly)
+    if showHist:
+        fig, ax, lineR, lineG, lineB = initHist(bins)
     
     ### Inner camera loop
     while cam.IsGrabbing():
@@ -80,7 +117,7 @@ def singleCamlivestream(camList, arrayParamsLoader, converter,
         debug('One frame shown.')
         # show histogram upon request
         if showHist:
-            pass
+            dispHist(img, bins, fig, ax, lineR, lineG, lineB)
 
         # refresh parameters if needed
         arrayParams = configArrayIfParamChanges(camList, arrayParamsLoader, arrayParams)
@@ -96,5 +133,6 @@ def singleCamlivestream(camList, arrayParamsLoader, converter,
     ### cleanup
     cam.StopGrabbing()
     cv.destroyAllWindows()
+    plt.close('all')
     return nextCamInd, arrayParams
 
