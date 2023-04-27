@@ -23,8 +23,8 @@ def parseArguments():
     parser.add_argument('-n', '--amount', type=int, default=45,
                         help='Frame amount to save, 0 for manual stop. '\
                             +'Default 45 (about one sec). Maximum for 7 raw 4k is about 450.')
-    parser.add_argument('--save_rgb', action='store_true',
-                        help='Save converted RGB image')
+    parser.add_argument('-m', '--save_mode', type=str, choices=['raw', 'rgb', '4bit-left'], default='raw',
+                        help='Save mode. 4bit-left would move 12-bit image left 4 bits, to 16-bit.')
     parser.add_argument('-f', '--folder', type=str, default='array_cap',
                         help='saving folder. Default \'array_cap\', timestamp auto appended. Create if not exist')
     parser.add_argument('-v', '--verbose', type=int, default=1, 
@@ -50,9 +50,8 @@ def main(args):
     cmd_head = 'python single_cam_cap.py'
     cmd_tail = ' '.join(['-n {}'.format(args.amount),
                          '-p {}'.format(args.params), 
+                         '-m {}'.format(args.save_mode), 
                          '-v {}'.format(args.verbose)])
-    if args.save_rgb:
-        cmd_tail = cmd_tail + ' --save_rgb'
     cmd_list = []
     for idx in args.cam_ind_list:
         ind_str = '-c {}'.format(idx)

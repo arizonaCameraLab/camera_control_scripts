@@ -35,8 +35,8 @@ def parseArguments():
                         help='The json file holding the array camera parameters.')
     parser.add_argument('-n', '--amount', type=int, default=45,
                         help='Frame amount to save, 0 for manual stop. Default 45 (about one sec).')
-    parser.add_argument('--save_rgb', action='store_true',
-                        help='Save converted RGB image')
+    parser.add_argument('-m', '--save_mode', type=str, choices=['raw', 'rgb', '4bit-left'], default='raw',
+                        help='Save mode. 4bit-left would move 12-bit image left 4 bits, to 16-bit.')
 #    parser.add_argument('--instant_save', action='store_true',
 #                        help='Save while capturing, would probably lower fps.')
     parser.add_argument('-f', '--folder', type=str, default=None,
@@ -57,8 +57,9 @@ def parseArguments():
 ########################################
 def main(args):
     ### Initialize
-    # some parameters
+    # parse some parameters
     dateFormat = '%Y%m%d_%H%M%S.%f'
+        
     # prepare parameter file
     arrayParamsLoader = RealTimeFileLoader(args.params, jsonLoadFunc)
     arrayParams = arrayParamsLoader.load()
@@ -72,17 +73,27 @@ def main(args):
     assert ('camParams' in locals()), 'Camera with index {} not found'.format(args.cam_idx)
     singleCamArrayParams = {sn: camParams}
     camName = camParams['name']
+    
     # pick required cameras
     tlFactory = pylon.TlFactory.GetInstance() # Get the transport layer factory.
     camList = pickRequiredCameras(tlFactory, singleCamArrayParams)
     cam = camList[0]
-    # converter to get opencv bgr format, if needed
-    if args.save_rgb:
+    
+    # convert and scale parameters
+    if args.save_mode == 'raw':
+        converter = None
+        leftShift = 0
+    elif args.save_mode == 'rgb':
         converter = pylon.ImageFormatConverter()
         converter.OutputPixelFormat = pylon.PixelType_BGR8packed
         converter.OutputBitAlignment = pylon.OutputBitAlignment_MsbAligned
-    else:
+        leftShift = 0
+    elif args.save_mode == '4bit-left':
         converter = None
+        leftShift = 4
+    else:
+        raise RuntimeError('save mode \'{}\' is not supported.'.format(args.save_mode))
+        
     # open and initialize camera parameters
     cam.Open()
     setCamParams(cam, camParams, None)
@@ -91,7 +102,7 @@ def main(args):
 
     ### grab frames
     startTime = datetime.now()
-    imgList, chunkDictList = chunkGrab(cam, args.amount, converter, camName)
+    imgList, chunkDictList = chunkGrab(cam, args.amount, converter, leftShift, camName)
     
     # save frames
     info('{} saving starts'.format(camName))

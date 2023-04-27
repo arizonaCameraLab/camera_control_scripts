@@ -76,7 +76,7 @@ def chunkGrabOne(cam, converter, camName, chunkFeatureList=chunkNameList, save_r
         chunkFeatureDict[cf] = getattr(grabResult, "Chunk"+cf).Value
     return img, chunkFeatureDict
 
-def chunkGrab(cam, amount, converter, camName, chunkFeatureList=chunkNameList):
+def chunkGrab(cam, amount, converter, leftShift, camName, chunkFeatureList=chunkNameList):
     """
     Grab a sequence of images from cam with already configured
     Return converted image, and a json file containing chunk data
@@ -93,6 +93,8 @@ def chunkGrab(cam, amount, converter, camName, chunkFeatureList=chunkNameList):
             img = grabResult.GetArray()
         else:
             img = converter.Convert(grabResult).GetArray()
+        if leftShift > 0:
+            img = np.left_shift(img, leftShift)
         chunkFeatureDict = {}
         for cf in chunkFeatureList:
             if not (hasattr(grabResult, 'Chunk'+cf) \
