@@ -75,7 +75,37 @@ def chunkGrabOne(cam, converter, camName, chunkFeatureList=chunkNameList, save_r
             error('Cam {} does not transfer {} chunk feature, ignored.'.format(camName, cf))
         chunkFeatureDict[cf] = getattr(grabResult, "Chunk"+cf).Value
     return img, chunkFeatureDict
+
+def chunkGrab(cam, amount, converter, camName, chunkFeatureList=chunkNameList):
+    """
+    Grab a sequence of images from cam with already configured
+    Return converted image, and a json file containing chunk data
+    """
     
+    imgList = []
+    chunkList = []
+    counter = 0
+    cam.StartGrabbingMax(amount)
+    info('{} capture starts'.format(camName))
+    while cam.IsGrabbing():
+        grabResult = cam.RetrieveResult(5000, pylon.TimeoutHandling_ThrowException)
+        if converter is None:
+            img = grabResult.GetArray()
+        else:
+            img = converter.Convert(grabResult).GetArray()
+        chunkFeatureDict = {}
+        for cf in chunkFeatureList:
+            if not (hasattr(grabResult, 'Chunk'+cf) \
+                    and genicam.IsAvailable(getattr(grabResult, 'Chunk'+cf))):
+                error('Cam {} does not transfer {} chunk feature, ignored.'.format(camName, cf))
+            chunkFeatureDict[cf] = getattr(grabResult, "Chunk"+cf).Value
+        imgList.append(img)
+        chunkList.append(chunkFeatureDict)
+        debug('{} frame {} captured'.format(camName, counter))
+        counter += 1
+    info('{} capture ends'.format(camName))
+    return imgList, chunkList
+
 def saveChunkOne(img, chunkDict, folder, name):
     """
     Save one image with its chunk feature dictionary
@@ -95,5 +125,3 @@ def saveChunkOne(img, chunkDict, folder, name):
         json.dump(chunkDict, fp)
     debug('{} saved.'.format(jsonName))
     return 
-       
-        

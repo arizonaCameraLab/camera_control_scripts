@@ -112,13 +112,17 @@ def pickRequiredCameras(tlFactory, arrayParams):
         else:
             raise pylon.RuntimeException('One {} camera\'s SN is not available.'.format(di.GetModelName()))
 
-    # validate and sort required devices
-    sortedDiList = ['' for _ in arrayParams.keys()]
+    # pick needed device info and index list
+    neededDiList = []
+    indexList = []
     for reqSn in arrayParams.keys():
         if not reqSn in devSnList:
             raise pylon.RuntimeException('Device with SN {} is required by array but not attached.'.format(reqSn))
-        sortedDiList[arrayParams[reqSn]['index']] \
-            = diList[devSnList.index(reqSn)]
+        neededDiList.append(diList[devSnList.index(reqSn)])
+        indexList.append(arrayParams[reqSn]['index'])
+        
+    # sort device info list
+    sortedDiList = [neededDiList[idx] for idx in np.argsort(indexList)]
 
     ### Create Instant Camera objects and adjust parameters
     # these adjustable parameters are properties defined in Node maps
