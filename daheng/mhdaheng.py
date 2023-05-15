@@ -34,7 +34,7 @@ parser.add_argument('--xywh', type=lambda whxy: [int(x) for x in whxy.split(',')
 parser.add_argument('-n', '--amount', type=int, default=100,
                     help='Frame amount to save, 0 for manual stop. Default 0. Ignored when disp/dryrun.')
 parser.add_argument('-f', '--folder', type=str, default='dhcap',
-                    help='saving folder. Default \'dhcap\'. Ignored when disp/dryrun.')
+                    help='saving folder. Default \'dhcap\'. Ignored when disp/dryrun. Timestamp automatically added.')
 parser.add_argument('--disp_scale', type=float, default=1.0,
                     help='Display scaling, float. Positive. Default 1')
 parser.add_argument('--verbose', action='store_true', help='verbose mode, Would print more camera informations')

@@ -1,10 +1,13 @@
-This setup is tested on a Intel Up Extreme single board computer with Ubuntu 22.04 OS. 
+This setup is tested on a Intel Up Extreme single board computer with Ubuntu 22.04 OS, and a Intel laptop with Ubuntu 22.04. 
 The camera tested is DaHeng VEN-830-22U3M.
 Minghao Hu, 2022 Dec 14.
 
 DaHeng's SDK/API/Manual can be found at https://www.get-cameras.com/requestdownload. 
 1. Install DaHeng SDK
-Download the newest SDK package (currently Galaxy_Linux x86_Gige U3_32bits 64bits_1.3.2206.9161.tar.gz) from DaHeng's site. Uncompress, follow the guide to install that. Remember to put the installation file to the target folder. I choose ~/apps/
+********** NOTE: MOVE THE .run FILE TO A PROPER PLACE **********
+The .run file will install the packages to current directory, so put it somewhere significant enough to avoid deleting by mistake. I choose ~/apps/
+Download the newest SDK package (currently Galaxy_Linux x86_Gige U3_32bits 64bits_1.3.2206.9161.tar.gz) from DaHeng's site. Uncompress, follow the guide to install that. 
+If you already installed it to someplace you don't intend to, just delete the folder and install again at the right place.
 
 2. Create conda environment 
 DaHeng's document suggests using Python 3.5, but I found that newest one still works. Below are the commands.
@@ -14,4 +17,11 @@ conda activate daheng
 pip install opencv-python PyQt5 # need to install these two via pip. conda's opencv can not show window, and PyQt5 needs to agree with opencv, otherwise there will be QObject::moveToThread error.
     
 3. Install DaHeng Python API
+********** NOTE: RUN ALL COMMAND WITHIN CONDA ENVIRONMENT CREATED **********
 Download the newest Python API (currently Galaxy_Linux_Python_2.0.2106.9041.tar.gz) from DaHeng's site. Follow the guide, but at the last step, don't use sudo. The package will be installed into the conda environment (keep an eye on the installed location of the .egg file), but can not be seen conda list, since it's not installed/managed by conda.
+
+4. Validation
+Within folder <repo folder>/daheng, within the created conda environment, run:
+python mhdaheng.py -h # display help information
+python mhdaheng.py -e 30000 -g 0 --disp_scale 0.25 -m disp # exposure 30000us, gain 0dB, scaling 0.25, livestream mode
+python mhdaheng.py -e 30000 -g 0 -m cap -n 20 -f test_cap # exposure 30000us, gain 0dB, capture mode, capture 20 frames, save to folder test_cap_<timestamp>
