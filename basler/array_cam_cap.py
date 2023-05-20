@@ -1,3 +1,16 @@
+"""
+Codes to capture frames from a Basler camera array with GNU parallel
+By Minghao, 2023 Mar
+
+Camera capture logic:
+A json file contains all the configurations needed for a camera array, which would be loaded to the cameras before capturing. Check mhbasler/camconfig.py for details.
+All cameras are run parallelly and independently with GNU parallel. These cameras are not synchronized, but their synchronization is good during experiments.
+The images and chunk data are saved at the same time.
+
+Known issue:
+
+"""
+
 import os
 import sys
 import subprocess
@@ -15,7 +28,7 @@ def parseArguments():
     Read arguments from the command line
     """
     ### compose parser
-    parser = argparse.ArgumentParser()
+    parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     parser.add_argument('-p', '--params', type=str, default='array_params.json',
                         help='The json file holding the array camera parameters.')
     parser.add_argument('-c', '--cam_ind_list', nargs='+', type=int, required=True, 
@@ -74,7 +87,7 @@ def main(args):
         info('Folder {} made for saving.'.format(folder_name))
         
     # parallel run the command list
-    subprocess.run('parallel -a {}'.format(recipe_name), shell=True)
+    subprocess.run('parallel --ungroup -a {}'.format(recipe_name), shell=True)
         
     # put recipe to folder
     shutil.move(recipe_name, os.path.join(folder_name, recipe_name))

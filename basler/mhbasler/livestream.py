@@ -20,6 +20,7 @@ The original one is not working, though. I fixed it following
 https://www.geeksforgeeks.org/how-to-update-a-plot-on-same-figure-during-the-loop/
 """
 
+import time
 import logging
 from logging import critical, error, info, warning, debug
 
@@ -103,13 +104,18 @@ def singleCamlivestream(camList, arrayParamsLoader, converter,
         fig, ax, lineR, lineG, lineB = initHist(bins)
     
     ### Inner camera loop
-    while cam.IsGrabbing():
+    frameCount = 0
+    FPS_AVG_GAP = 20
+    grabTime0 = time.time_ns()
+    print('Note that display fps is usually slow and unstable comparing to pure capture.')
+    while cam.IsGrabbing():    
         # Access the image data, convert
         grabResult = cam.RetrieveResult(5000, pylon.TimeoutHandling_ThrowException)
         if grabResult.GrabSucceeded():
             img = converter.Convert(grabResult).GetArray()
         grabResult.Release()
         debug('One frame grabbed.')
+        frameCount += 1
         
         # show image
         cv.namedWindow(liveWindowName, cv.WINDOW_NORMAL)
@@ -121,6 +127,12 @@ def singleCamlivestream(camList, arrayParamsLoader, converter,
 
         # refresh parameters if needed
         arrayParams = configArrayIfParamChanges(camList, arrayParamsLoader, arrayParams)
+
+        # timing and show fps every 10 frames
+        if frameCount % FPS_AVG_GAP == 0:
+            grabTime1 = time.time_ns()
+            print('{:d} frames grabbed, \t display fps {:.2f} '.format(frameCount, 1e9/(grabTime1-grabTime0)*FPS_AVG_GAP), end='\r')
+            grabTime0 = grabTime1
 
         # wait for keyboard input, change if needed
         nextCamInd = opencvKeyWatcher(nextCamInd)
@@ -134,5 +146,6 @@ def singleCamlivestream(camList, arrayParamsLoader, converter,
     cam.StopGrabbing()
     cv.destroyAllWindows()
     plt.close('all')
+    print('\nLivestream ends.')
     return nextCamInd, arrayParams
 

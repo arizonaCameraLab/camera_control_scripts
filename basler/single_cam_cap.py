@@ -1,7 +1,13 @@
 """
-Workbench for Basler array camera capturing. 
-By Minghao, 2023 Feb
-I actually prefer underscore names, but the sample codes are written in camel naming. I'll use camel.
+Codes to capture frames from one Basler camera
+By Minghao, 2023 Mar
+
+Camera capture logic:
+A json file contains all the configurations needed for a camera array, which would be loaded to the cameras before capturing. Check mhbasler/camconfig.py for details.
+The images and chunk data are saved at the same time.
+
+Known issue:
+
 """
 
 import os
@@ -28,13 +34,13 @@ def parseArguments():
     Read arguments from the command line
     """
     ### compose parser
-    parser = argparse.ArgumentParser()
+    parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     parser.add_argument('-c', '--cam_idx', type=int,
                         help='Camera index, required one.')
     parser.add_argument('-p', '--params', type=str, default='array_params.json',
                         help='The json file holding the array camera parameters.')
     parser.add_argument('-n', '--amount', type=int, default=45,
-                        help='Frame amount to save, 0 for manual stop. Default 45 (about one sec).')
+                        help='Frame amount to save, 0 for manual stop. ')
     parser.add_argument('-m', '--save_mode', type=str, choices=['raw', 'rgb', '4bit-left'], default='raw',
                         help='Save mode. 4bit-left would move 12-bit image left 4 bits, to 16-bit.')
 #    parser.add_argument('--instant_save', action='store_true',
@@ -101,11 +107,12 @@ def main(args):
     enableChunk(cam)
 
     ### grab frames
+    print('{} capturing starts'.format(camName))
     startTime = datetime.now()
     imgList, chunkDictList = chunkGrab(cam, args.amount, converter, leftShift, camName)
     
     # save frames
-    info('{} saving starts'.format(camName))
+    print('{} saving starts'.format(camName))
     if args.folder is None:
         folderName = camName
     else:

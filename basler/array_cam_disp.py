@@ -1,7 +1,14 @@
 """
-Workbench for Basler array camera capturing. 
-By Minghao, 2023 Feb
-I actually prefer underscore names, but the sample codes are written in camel naming. I'll use camel.
+Codes to display livestreams from a Basler camera array, one camera at a time
+By Minghao, 2023 Mar
+
+Camera display logic:
+A json file contains all the configurations needed for a camera array, which would be loaded to the cameras before capturing. Check mhbasler/camconfig.py for details.
+One camera run at a time.
+The livestream and pixel value histogram can all be displayed.
+
+Known issue:
+The window sizes of the livestream and histogram are default. Need adjustment every time it appears.
 """
 
 import os
@@ -29,13 +36,13 @@ def parseArguments():
     Read arguments from the command line
     """
     ### compose parser
-    parser = argparse.ArgumentParser()
+    parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     parser.add_argument('-p', '--params', type=str, default='array_params.json',
                         help='The json file holding the array camera parameters.')
     parser.add_argument('--no_hist', dest='show_hist', action='store_false',
                         help='Disable pixel value histogram.')
     parser.add_argument('--bins', type=int, default=50,
-                        help='Histogram bin amount. Default 50.')
+                        help='Histogram bin amount.')
     parser.add_argument('-v', '--verbose', type=int, default=1, 
                         help='Verbosity of logging: 0-critical, 1-error, 2-warning, 3-info, 4-debug')
     ### parse args

@@ -136,7 +136,7 @@ def pickRequiredCameras(tlFactory, arrayParams):
 ########################################
 ### Camera "in-file" feature configuration
 ########################################
-nonStopParamList = ('ExposureTime', 'Gain')
+nonStopParamList = ('ExposureTime', 'Gain', 'DeviceLinkThroughputLimit')
 stopParamList = ('Width', 'Height', 'OffsetX', 'OffsetY', 'rot180', 'PixelFormat')
 
 def _checkCacheDeco(func):
