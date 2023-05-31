@@ -159,7 +159,7 @@ def singleCamlivestream(camList, arrayParamsLoader, converter,
         if arucoDetector is not None:
             cornerList, idList, rejectedImgPoints = arucoDetector.detectMarkers(img)
             if len(cornerList) > 0:
-                cv.aruco.drawDetectedMarkers(dispImg, cornerList, idList, (0,255,0))
+                cv.aruco.drawDetectedMarkers(dispImg, cornerList, idList, (255,0,0))
                 draw_aruco_coordinate(dispImg, cornerList)
 
         # show image
