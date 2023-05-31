@@ -76,20 +76,19 @@ def draw_aruco_desc_tile(aruco_dict_type_str, index, length, dpi):
 ##############################
 def draw_aruco_coordinate(img, corner_list, color=(0,0,255)):
     """
-    Draw ArUco marker's origin coordinate under it
+    Draw ArUco marker's origin coordinate under it. Note that it alters the original image
     img should be a unit8 numpy array, the BGR image containing the ArUco markers
     corner_list should be a list of 1x4x2 numpy float array, returned by cv.aruco.ArucoDetector.detectMarkers()
     color should be a length-3 tuple, denoting unit8 BGR color
     """
-    canvas = np.copy(img)
     for corner in corner_list:
         x, y = corner[0][0]
         bot_y = corner[0,:,1].max()    
         left_x = corner[0,:,0].min()
         width = corner[0,:,0].max() - left_x
         coor_str = '({:.1f}, {:.1f})'.format(x, y)
-        cv.putText(canvas, coor_str, 
+        cv.putText(img, coor_str, 
                    (np.round(left_x - width*len(coor_str)*0.06).astype(int), np.round(bot_y + width*0.38).astype(int)), 
                    cv.FONT_HERSHEY_SIMPLEX, width*0.012, 
                    (0,0,255), np.round(width*0.025).astype(int), cv.LINE_AA, False)
-    return canvas
+    return img

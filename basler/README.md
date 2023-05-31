@@ -45,7 +45,7 @@ The `array_cam_cap.py` script can run multiple cameras simultaneously with GNU p
 When all frames are captured, it's better to scp/sftp to put them to lab desktop / UA HPC. Tried to compress the frames, but the compression ratio is not that good through. Directly transfer usually takes less time.
 
 ## TODO
-Implement take-one-save-one stratergy. Maxim has roughly tested it, got about 33 fps.   
+Implement take-one-save-one strategy. Maxim has roughly tested it, got about 33 fps.   
 Make a quick framerate examine script.    
 Explore the reason why one-script function failed. Maxim tried to run multiple cameras within one Python script, but when the amount of cameras exceed 4, the program failed. Neither an InstantCameraArray nor a list of running cameras worked. Minghao's guess is the there's some resource limit upon one process. Maybe altering the Linux setting would help.
 

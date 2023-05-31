@@ -11,8 +11,9 @@ Known issue:
 The window sizes of the livestream and histogram are default. Need adjustment every time it appears.
 """
 
-import os
 import sys
+sys.path.append('/home/dbg/Desktop/camera_control_scripts/target_workbench')
+import os
 import argparse
 import logging
 from logging import critical, error, info, warning, debug
@@ -27,6 +28,7 @@ from mhbasler.camconfig import jsonLoadFunc, RealTimeFileLoader
 from mhbasler.camconfig import pickRequiredCameras, setCamParams
 from mhbasler.livestream import singleCamlivestream
 from mhbasler.grab import enableChunk, disableChunk, chunkGrabOne, saveChunkOne
+from target_toolbox.aruco_marker import ARUCO_DICT_TYPE
 
 ########################################
 ### Argument parsing and logging setup
@@ -36,22 +38,33 @@ def parseArguments():
     Read arguments from the command line
     """
     ### compose parser
-    parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)
+    parser = argparse.ArgumentParser(prog='Array camera display',
+                 description='Display livestreams from a Basler camera array, one camera at a time',
+                 epilog='Accept following keyboard inputs to the livestream window: ' + \
+                        '0-6 to select camera; ' + \
+                        's to save snapshot (with overlays); ' + \
+                        'f to save frame (no overlays); ' + \
+                        'ESC to quit.', 
+                 formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     parser.add_argument('-p', '--params', type=str, default='array_params.json',
                         help='The json file holding the array camera parameters.')
-    parser.add_argument('--no_hist', dest='show_hist', action='store_false',
-                        help='Disable pixel value histogram.')
+    parser.add_argument('--fps', dest='show_fps', action='store_true',
+                        help='Enable livestream fps display.')
+    parser.add_argument('--aruco', dest='detect_aruco', action='store_true',
+                        help='Enable ArUco marker detection')
+    parser.add_argument('--hist', dest='show_hist', action='store_true',
+                        help='Enable pixel value histogram.')
     parser.add_argument('--bins', type=int, default=50,
                         help='Histogram bin amount.')
-    parser.add_argument('-v', '--verbose', type=int, default=1, 
+    parser.add_argument('-v', '--verbose', type=int, default=1,
                         help='Verbosity of logging: 0-critical, 1-error, 2-warning, 3-info, 4-debug')
     ### parse args
     args = parser.parse_args()
     ### set logging
-    vTable = {0: logging.CRITICAL, 1: logging.ERROR, 2: logging.WARNING, 
+    vTable = {0: logging.CRITICAL, 1: logging.ERROR, 2: logging.WARNING,
               3: logging.INFO, 4: logging.DEBUG}
     logging.basicConfig(format='%(levelname)s: %(message)s', level=vTable[args.verbose], stream=sys.stdout)
-    
+
     return args
 
 ########################################
@@ -76,6 +89,16 @@ def main(args):
         cam.Open()
         params = arrayParams[cam.GetDeviceInfo().GetSerialNumber()]
         setCamParams(cam, params, None)
+    # histogram parameters
+    hist_bins = None
+    if args.show_hist:
+        hist_bins = args.bins
+    # ArUco detector parameters
+    aruco_detector = None
+    if args.detect_aruco:
+        aruco_parameter = cv.aruco.DetectorParameters()
+        aruco_dict = cv.aruco.getPredefinedDictionary(ARUCO_DICT_TYPE)
+        aruco_detector = cv.aruco.ArucoDetector(aruco_dict, aruco_parameter)
 
     ### livestream cameras
     # the outer loop: switch between cameras
@@ -83,10 +106,10 @@ def main(args):
     while camInd >= 0:
         # the inner loop: grab, show, real-time configure
         camInd, arrayParams = singleCamlivestream(
-            camList, arrayParamsLoader, converter, 
-            arrayParams, camInd, 
-            args.show_hist, args.bins)
-    
+            camList, arrayParamsLoader, converter,
+            arrayParams, camInd,
+            hist_bins, aruco_detector, args.show_fps)
+
     ### cleanup
     # close cameras
     for cam in camList:
@@ -102,4 +125,3 @@ if __name__ == '__main__':
 #    nList = nm.GetNodes()
 #    for n in nList:
 #        print(n.GetNode().GetName())
-

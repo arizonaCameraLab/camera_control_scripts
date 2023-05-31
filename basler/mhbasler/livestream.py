@@ -14,13 +14,16 @@ The ugly part is that real-time parameter change happens in the inner loop, thus
 Known issue:
 
 Acknoledgement:
-histogram part largely learned from 
-https://github.com/nrsyed/computer-vision/blob/master/real_time_histogram/real_time_histogram.py. 
-The original one is not working, though. I fixed it following 
+histogram part largely learned from
+https://github.com/nrsyed/computer-vision/blob/master/real_time_histogram/real_time_histogram.py.
+The original one is not working, though. I fixed it following
 https://www.geeksforgeeks.org/how-to-update-a-plot-on-same-figure-during-the-loop/
 """
 
+import sys
+sys.path.append('/home/dbg/Desktop/camera_control_scripts/target_workbench')
 import time
+from datetime import datetime
 import logging
 from logging import critical, error, info, warning, debug
 
@@ -31,10 +34,11 @@ import matplotlib.pyplot as plt
 from pypylon import pylon, genicam
 
 from .camconfig import configArrayIfParamChanges
+from target_toolbox.aruco_marker import draw_aruco_coordinate
 
 ########################################
 ### Camera livestream
-########################################   
+########################################
 def opencvKeyWatcher(x, waitTime=1):
     """
     Return changed x if certain key is pressed
@@ -48,8 +52,12 @@ def opencvKeyWatcher(x, waitTime=1):
         return -1
     elif 48 <= k and k <= 54: # 48-57 for 0-9
         return int(k - 48)
+    elif k == 102: # 102 for f, frame grab
+        return 'f'
+    elif k == 115: # 115 for s, snap shot
+        return 's'
     else:
-        warning('Input not accepted. ESC to quit, and 0-6 for camera selection')
+        warning('Input not accepted. ESC to quit, 0-6 for camera selection, s for snapshot, f for frame grab')
         return x
 
 def initHist(bins, lw=3, alpha=0.5):
@@ -65,7 +73,7 @@ def initHist(bins, lw=3, alpha=0.5):
     ax.set_ylim(0, 1)
     ax.legend()
     return fig, ax, lineR, lineG, lineB
-    
+
 def dispHist(frame, bins, fig, ax, lineR, lineG, lineB):
     # calculate histogram
     numPixels = np.prod(frame.shape[:2])
@@ -82,33 +90,46 @@ def dispHist(frame, bins, fig, ax, lineR, lineG, lineB):
     fig.canvas.draw()
     fig.canvas.flush_events()
     return
-    
-def singleCamlivestream(camList, arrayParamsLoader, converter, 
-                        arrayParams, camInd, 
-                        showHist, bins):
+
+def singleCamlivestream(camList, arrayParamsLoader, converter,
+                        arrayParams, camInd,
+                        histBins=None,
+                        arucoDetector=None,
+                        showFps=False):
     """
     Single camera livestream function. Including init, loop, and cleanup.
-    The ugly part is that real-time parameter change happens in the inner loop, 
-    thus we have to expose all camera and parameters to inner loop, 
+    The ugly part is that real-time parameter change happens in the inner loop,
+    thus we have to expose all camera and parameters to inner loop,
     then return the updated arrayParams back to the outer loop.
     The nextCamInd returned to control camera switch
+    histBins denotes the numbers of bins when showing histogram.
+    If None, no hisograms will be shown
+    arucoDetector detects the Aruco markers and labels it on the image.
+    If None, not going to detect ArUco markers
+    If showFps, image count and fps would not only printed in terminal,
+    but also displayed at the frames top-left corner
     """
     ### initializing
+    # camera
     cam = camList[camInd]
     nextCamInd = camInd
     camName = arrayParams[cam.GetDeviceInfo().GetSerialNumber()]['name']
     liveWindowName = 'cam{} '.format(camInd) + camName
-    histWindowName = liveWindowName + ' histogram'
     cam.StartGrabbing(pylon.GrabStrategy_LatestImageOnly)
-    if showHist:
-        fig, ax, lineR, lineG, lineB = initHist(bins)
-    
+    # histogram window
+    if histBins is not None:
+        histWindowName = liveWindowName + ' histogram'
+        fig, ax, lineR, lineG, lineB = initHist(histBins)
+    # other args
+    dateFormat = '%Y%m%d_%H%M%S.%f'
+
     ### Inner camera loop
     frameCount = 0
+    fps = 0
     FPS_AVG_GAP = 20
     grabTime0 = time.time_ns()
     print('Note that display fps is usually slow and unstable comparing to pure capture.')
-    while cam.IsGrabbing():    
+    while cam.IsGrabbing():
         # Access the image data, convert
         grabResult = cam.RetrieveResult(5000, pylon.TimeoutHandling_ThrowException)
         if grabResult.GrabSucceeded():
@@ -116,36 +137,75 @@ def singleCamlivestream(camList, arrayParamsLoader, converter,
         grabResult.Release()
         debug('One frame grabbed.')
         frameCount += 1
-        
-        # show image
-        cv.namedWindow(liveWindowName, cv.WINDOW_NORMAL)
-        cv.imshow(liveWindowName, img)
-        debug('One frame shown.')
-        # show histogram upon request
-        if showHist:
-            dispHist(img, bins, fig, ax, lineR, lineG, lineB)
-
-        # refresh parameters if needed
-        arrayParams = configArrayIfParamChanges(camList, arrayParamsLoader, arrayParams)
 
         # timing and show fps every 10 frames
         if frameCount % FPS_AVG_GAP == 0:
             grabTime1 = time.time_ns()
-            print('{:d} frames grabbed, \t display fps {:.2f} '.format(frameCount, 1e9/(grabTime1-grabTime0)*FPS_AVG_GAP), end='\r')
+            fps = 1e9/(grabTime1-grabTime0)*FPS_AVG_GAP
+            print('{:d} frames grabbed, \t display fps {:.2f} '.format(frameCount, fps), end='\r')
             grabTime0 = grabTime1
+
+        ### add overlays to image
+        # fps
+        dispImg = np.copy(img)
+        if showFps:
+            h, w, _ = dispImg.shape
+            fpsStr = 'Frame {:d}, fps {:.2f}'.format(frameCount, fps)
+            cv.putText(dispImg, fpsStr,
+                (np.round(w*0.01).astype(int), np.round(w*0.03).astype(int)),
+                cv.FONT_HERSHEY_SIMPLEX, w*0.0008,
+                (0,255,0), np.round(w*0.0012).astype(int), cv.LINE_AA, False)
+        # ArUco markers
+        if arucoDetector is not None:
+            cornerList, idList, rejectedImgPoints = arucoDetector.detectMarkers(img)
+            if len(cornerList) > 0:
+                cv.aruco.drawDetectedMarkers(dispImg, cornerList, idList, (0,255,0))
+                draw_aruco_coordinate(dispImg, cornerList)
+
+        # show image
+        cv.namedWindow(liveWindowName, cv.WINDOW_NORMAL)
+        cv.imshow(liveWindowName, dispImg)
+        debug('One frame shown.')
+
+        # show histogram upon request
+        if histBins is not None:
+            dispHist(img, histBins, fig, ax, lineR, lineG, lineB)
+
+        # refresh parameters if needed
+        arrayParams = configArrayIfParamChanges(camList, arrayParamsLoader, arrayParams)
 
         # wait for keyboard input, change if needed
         nextCamInd = opencvKeyWatcher(nextCamInd)
-        if nextCamInd == camInd: # no change, keep running
-            continue
-        else: # changed, break
-            debug('Break from inner livestream loop, nextCamInd {}'.format(nextCamInd))
-            break
-            
+        if isinstance(nextCamInd, int):
+            if nextCamInd == camInd: # no change, keep running
+                continue
+            else: # changed, break(-1)
+                debug('Break from inner livestream loop, nextCamInd {}'.format(nextCamInd))
+                break
+        elif isinstance(nextCamInd, str):
+            # timestamp
+            timestamp = datetime.now().strftime(dateFormat)[:-4]
+            if nextCamInd == 's':
+                # snapshot
+                imgFn = 'cam{:d}_snapshot_{:s}.png'.format(camInd, timestamp)
+                if not cv.imwrite(imgFn, dispImg):
+                    error('Cannot save image {:s}. Check problem.'.format(imgFn))
+                else:
+                    print('\nSnapshot saved to {:s}'.format(imgFn))
+            elif nextCamInd == 'f':
+                # frame grab
+                imgFn = 'cam{:d}_frame_{:s}.png'.format(camInd, timestamp)
+                if not cv.imwrite(imgFn, img):
+                    error('Cannot save image {:s}. Check problem.'.format(imgFn))
+                else:
+                    print('\nFrame saved to {:s}'.format(imgFn))
+        # no state-changing key captured
+        warning('Unexpected keyboard input gives {}, continue display'.format(nextCamInd))
+        nextCamInd = camInd
+
     ### cleanup
     cam.StopGrabbing()
     cv.destroyAllWindows()
     plt.close('all')
     print('\nLivestream ends.')
     return nextCamInd, arrayParams
-

@@ -2,8 +2,8 @@ import argparse
 import numpy as np
 import cv2 as cv
 
-from target_toolbox.aruco_marker import ARUCO_INNER_BIT, ARUCO_AMOUNT, ARUCO_EDGE_BIT, ARUCO_DICT_TYPE_STR, ARUCO_DICT_TYPE
-from target_toolbox.aruco_marker import draw_aruco_marker, draw_aruco_desc_tile
+from .target_toolbox.aruco_marker import ARUCO_INNER_BIT, ARUCO_AMOUNT, ARUCO_EDGE_BIT, ARUCO_DICT_TYPE_STR, ARUCO_DICT_TYPE
+from .target_toolbox.aruco_marker import draw_aruco_marker, draw_aruco_desc_tile
 
 def get_parser():
     ### compose parser
