@@ -34,7 +34,7 @@ import matplotlib.pyplot as plt
 from pypylon import pylon, genicam
 
 from .camconfig import configArrayIfParamChanges
-from target_toolbox.aruco_marker import draw_aruco_coordinate
+from target_toolbox.aruco_marker import draw_aruco_square_score, draw_aruco_coordinate
 
 ########################################
 ### Camera livestream
@@ -160,6 +160,7 @@ def singleCamlivestream(camList, arrayParamsLoader, converter,
             cornerList, idList, rejectedImgPoints = arucoDetector.detectMarkers(img)
             if len(cornerList) > 0:
                 cv.aruco.drawDetectedMarkers(dispImg, cornerList, idList, (255,0,0))
+                draw_aruco_square_score(dispImg, cornerList)
                 draw_aruco_coordinate(dispImg, cornerList)
 
         # show image

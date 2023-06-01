@@ -74,11 +74,12 @@ def draw_aruco_desc_tile(aruco_dict_type_str, index, length, dpi):
 ##############################
 ### marker detection and evaluation
 ##############################
-def square_score(x, y, uplimit=100):
+def square_score(x, y, flip=False, uplimit=100.0, eps=1e-5):
     """
     Give a score of the "squareness" of four points
     The smaller, the more these for points form a square
-    Note these points needs to be in a clockwise order
+    Note these points needs to be in a clockwise order. 
+    If in image coordinate system (x to right, y to down), need to flip
     Mathematically, the score is defined by: 
         fitting a square to match the points giving the least square error
         the negative log of that square error
@@ -86,49 +87,70 @@ def square_score(x, y, uplimit=100):
     """
     assert len(x)==4 and len(y)==4, \
     'Need four x and four y'
+    if flip:
+        y = -y
     
     x0 = np.mean(x)
     y0 = np.mean(y)
     u = (x[0]-y[1]-x[2]+y[3])/4
     v = (y[0]+x[1]-y[2]-x[3])/4
     
-    s = (np.power(x,2).sum() + np.power(y,2).sum() - 4*(x0**2) - 4*(y0**2))/(u**2 + v**2) - 4
+    s = (np.power(x,2).sum() + np.power(y,2).sum() - 4*(x0**2) - 4*(y0**2))/(u**2+v**2+eps) - 4
     
     if s <= 0:
         return uplimit
     else:
         return np.clip(-np.log(s), None, uplimit)
-    
-    return s
 
 ##############################
 ### marker displayers
 ##############################
-def draw_aruco_coordinate(img, corner_list, square_threshold=8.5):
+def draw_aruco_coordinate(img, corner_list, color=(0,255,0)):
     """
     Draw ArUco marker's origin coordinate under it. Note that it alters the original image
     img should be a unit8 numpy array, the BGR image containing the ArUco markers
     corner_list should be a list of 1x4x2 numpy float array, returned by cv.aruco.ArucoDetector.detectMarkers()
-    When it's square, draw green text; When not, draw red text
     """
     for corner in corner_list:
-        # calculate square score
-        score = square_score(*np.array(corner[0]).transpose())
-        if score >= square_threshold:
-            color = (0,255,0)
-        else:
-            color = (0,0,255)
-            
         # define text location
         x, y = corner[0][0]
         bot_y = corner[0,:,1].max()    
-        left_x = corner[0,:,0].min()
-        width = corner[0,:,0].max() - left_x
+        center_x = corner[0,:,0].mean()
+        width = corner[0,:,0].max() - corner[0,:,0].min()
         
         # draw text
         coor_str = '({:.0f}, {:.0f})'.format(x, y) # its float type, but only gives integers
         cv.putText(img, coor_str, 
-                   (np.round(left_x - width*len(coor_str)*0.06).astype(int), np.round(bot_y + width*0.38).astype(int)), 
+                   (np.round(center_x - width*len(coor_str)*0.1).astype(int), np.round(bot_y + width*0.38).astype(int)), 
+                   cv.FONT_HERSHEY_SIMPLEX, width*0.012, 
+                   color, np.round(width*0.025).astype(int), cv.LINE_AA, False)
+    return img
+    
+def draw_aruco_square_score(img, corner_list, threshold=8.5):
+    """
+    Draw ArUco marker's square score above it. Note that it alters the original image
+    img should be a unit8 numpy array, the BGR image containing the ArUco markers
+    corner_list should be a list of 1x4x2 numpy float array, returned by cv.aruco.ArucoDetector.detectMarkers()
+    score above threshold will be displayed green, otherwise, red
+    """
+    for corner in corner_list:
+        # calculate score and color
+        score = square_score(*corner[0].transpose(), True)
+        if score >= threshold:
+            color = (0,255,0)
+        else:
+            color = (0,0,255)
+        
+        # define text location
+        x, y = corner[0][0]
+        top_y = corner[0,:,1].min()    
+        center_x = corner[0,:,0].mean()
+        width = corner[0,:,0].max() - corner[0,:,0].min()
+        
+        # draw text
+        text_str = '{:.1f}'.format(score) # its float type, but only gives integers
+        cv.putText(img, text_str, 
+                   (np.round(center_x - width*len(text_str)*0.12).astype(int), np.round(top_y - width*0.1).astype(int)), 
                    cv.FONT_HERSHEY_SIMPLEX, width*0.012, 
                    color, np.round(width*0.025).astype(int), cv.LINE_AA, False)
     return img
