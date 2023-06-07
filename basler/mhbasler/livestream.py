@@ -95,19 +95,24 @@ def singleCamlivestream(camList, arrayParamsLoader, converter,
                         arrayParams, camInd,
                         histBins=None,
                         arucoDetector=None,
-                        showFps=False):
+                        showFps=False, 
+                        arucoSineMetas=None
+                       ):
     """
     Single camera livestream function. Including init, loop, and cleanup.
     The ugly part is that real-time parameter change happens in the inner loop,
-    thus we have to expose all camera and parameters to inner loop,
-    then return the updated arrayParams back to the outer loop.
+        thus we have to expose all camera and parameters to inner loop,
+        then return the updated arrayParams back to the outer loop.
     The nextCamInd returned to control camera switch
-    histBins denotes the numbers of bins when showing histogram.
+        histBins denotes the numbers of bins when showing histogram.
     If None, no hisograms will be shown
-    arucoDetector detects the Aruco markers and labels it on the image.
+        arucoDetector detects the Aruco markers and labels it on the image.
     If None, not going to detect ArUco markers
     If showFps, image count and fps would not only printed in terminal,
-    but also displayed at the frames top-left corner
+        but also displayed at the frames top-left corner
+    If arucoSineMetas is not None, the program would try to find ArUco-Sine chart,
+        and calculate the MTF if we found any fronto-parallel. Note that
+        that should be dict of meta dicts, the key being ArUco index
     """
     ### initializing
     # camera
@@ -120,6 +125,10 @@ def singleCamlivestream(camList, arrayParamsLoader, converter,
     if histBins is not None:
         histWindowName = liveWindowName + ' histogram'
         fig, ax, lineR, lineG, lineB = initHist(histBins)
+    # arucoSineMetas
+    if arucoSineMetas is not None:
+        assert arucoDetector is not None, 'ArUco-Sine charts needs a arucoDetector'
+        arucoSineIdxList = list(arucoSineMetas.keys())
     # other args
     dateFormat = '%Y%m%d_%H%M%S.%f'
 
@@ -155,6 +164,7 @@ def singleCamlivestream(camList, arrayParamsLoader, converter,
                 (np.round(w*0.01).astype(int), np.round(w*0.03).astype(int)),
                 cv.FONT_HERSHEY_SIMPLEX, w*0.0008,
                 (0,255,0), np.round(w*0.0012).astype(int), cv.LINE_AA, False)
+        
         # ArUco markers
         if arucoDetector is not None:
             cornerList, idList, rejectedImgPoints = arucoDetector.detectMarkers(img)
@@ -162,6 +172,33 @@ def singleCamlivestream(camList, arrayParamsLoader, converter,
                 cv.aruco.drawDetectedMarkers(dispImg, cornerList, idList, (255,0,0))
                 draw_aruco_square_score(dispImg, cornerList)
                 draw_aruco_coordinate(dispImg, cornerList)
+        
+        # ArUco-Sine charts
+        if arucoSineMetas is not None:
+            # loop each marker found
+            for arucoCorner, arucoIdx in zip(cornerList, idList):
+                # see if the corner is in meta dict
+                if not (arucoIdx in arucoSineIdxList):
+                    continue
+                arucoCorner = np.array(arucoCorner, dtype=np.float32).reshape(4,2)
+                metaDict = arucoSineMetas[arucoIdx]
+                # extract tiles
+                tileList, ppList, lpmmList = \
+                sextract_sine_and_bw_tiles(cv.cvtColor(frame, cv.COLOR_BGR2GRAY), 
+                                           arucoCorner, metaDict)
+                # calculate black/white contrast
+                bwTile = tileList[-1].astype(float)/255.0
+                commMode, diffMode = estimate_comm_diff_from_bw_tile(bwTile)
+                # calculate spectrum and MTF
+                mtfList = []
+                for tile, lpmm, pp in zip(tileList[:-1], lpmmList, ppList):
+                    mtf = estimate_mtf_from_sine_tile(tile.astype(float)/255.0, lpmm, pp, 
+                                                      commMode, diffMode, bezel_ratio=0.15)
+                    mtfList.append(mtf)
+                # find and draw sine block outline
+                sineCorner = find_sine_corner_list(arucoCorner, metaDict)
+                dispImg = draw_sine_block_outline_and_mtf(dispImg, sineCorner, lpmmList, mtfList)
+            
 
         # show image
         cv.namedWindow(liveWindowName, cv.WINDOW_NORMAL)

@@ -76,3 +76,34 @@ def draw_bw_ref_tile(width, height):
     y_list = np.round(y_list*255.0).astype(np.uint8)
     canvas = np.tile(y_list, (height, 1))
     return cv.cvtColor(canvas, cv.COLOR_GRAY2BGR)
+
+##############################
+### drawing functions
+##############################
+def draw_multiline_text(img, text_list, xy, total_height, color=(0,255,0)):
+    """
+    Draw multiline text on image at location xy
+    img should be a unit8 numpy array, BGR image
+    text_list should be a list containing multiple lines. Each line is an element
+    """
+    N = len(text_list)
+    x, y = xy
+    local_x = int(np.round(x))
+    for a, text in enumerate(text_list):
+        local_y = int(np.round(y + (a+0.8)*total_height/N))
+        cv.putText(img, text, (local_x, local_y), 
+                   cv.FONT_HERSHEY_SIMPLEX, total_height*0.007, 
+                   color, int(np.round(total_height*0.02)), cv.LINE_AA, False)
+    return img
+
+def draw_polylines(img, pts, isClosed, color, thickness=1, lineType=cv.LINE_AA, shift=0):
+    """
+    OpenCV's own function is giving errors. Strange
+    Reimplememt it
+    """
+    pts_list = list(pts)
+    if isClosed:
+        pts_list = pts_list + [pts_list[0]]
+    for pt1, pt2 in zip(pts_list[:-1], pts_list[1:]):
+        img = cv.line(img, pt1, pt2, color, thickness, lineType, shift)
+    return img

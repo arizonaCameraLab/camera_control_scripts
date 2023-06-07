@@ -1,7 +1,8 @@
 import numpy as np
 import cv2 as cv
 
-from .common import mm_to_pixels, pixels_to_mm, center_crop_pad_to, remove_bezel, draw_bw_ref_tile
+from .common import mm_to_pixels, pixels_to_mm, center_crop_pad_to, remove_bezel, \
+                    draw_bw_ref_tile, draw_multiline_text, draw_polylines
 from .aruco_marker import ARUCO_INNER_BIT, ARUCO_AMOUNT, ARUCO_EDGE_BIT, ARUCO_DICT_TYPE_STR, ARUCO_DICT_TYPE
 from .aruco_marker import draw_aruco_marker, draw_aruco_desc_tile
 from .sine_chart import draw_sine_block, draw_sine_block_desc_tile
@@ -92,21 +93,26 @@ def _affine_2x3_to_3x3(H):
     Hp[2,2] = 1
     return Hp
 
-def _xywhr_to_ouv(xywhr):
+def _xywhr_to_ouv(xywhr, point_to_corner=True):
     """
     Transfer rectangle location's xywhr notation to ouv notation
     xywhr: length-5 list. Gives the rectangle's location in source image, by
            top-left (in local coordinate) corner x/y, 
            rectangle width/height (in local coordinate), 
            rotation (rad, clockwise)
+    point_to_corner: point to the center of corner pixel. Otherwise, point to next pixel
     ouv: 3x2 array. origin - u vector - v vector
     """
     x, y, w, h, r = xywhr
     rot_mat = np.array([[np.cos(r), -np.sin(r)], 
                         [np.sin(r), np.cos(r)]], dtype=float)
     ovec = np.array([x, y], dtype=float)
-    uvec = np.array(rot_mat @ np.array([[w], [0]], dtype=float)).flatten()
-    vvec = np.array(rot_mat @ np.array([[0], [h]], dtype=float)).flatten()
+    if point_to_corner:
+        uvec = np.array(rot_mat @ np.array([[w-1], [0]], dtype=float)).flatten()
+        vvec = np.array(rot_mat @ np.array([[0], [h-1]], dtype=float)).flatten()
+    else:
+        uvec = np.array(rot_mat @ np.array([[w], [0]], dtype=float)).flatten()
+        vvec = np.array(rot_mat @ np.array([[0], [h]], dtype=float)).flatten()
     return np.stack([ovec, uvec, vvec], axis=0)
 
 def _ouv_to_corners(ouv):
@@ -137,7 +143,8 @@ def rec2rec_affine(src_xywhr, tsf_corner_list, partial=True, reverse=False):
     partial: if True, estimate partial affine, which consists only rotation, scaling, translation
     """
     # build corner list
-    src_corner_list = _ouv_to_corners(_xywhr_to_ouv(src_xywhr)).astype(np.float32)
+    # corresponding to corner points, need point_to_corner
+    src_corner_list = _ouv_to_corners(_xywhr_to_ouv(src_xywhr, True)).astype(np.float32)
     # from A to B
     if reverse:
         Acl = tsf_corner_list
@@ -178,6 +185,18 @@ def recout_affine_shape(xywhr, tgt_w):
     H_total = np.array(H_total[:2], dtype=np.float32)
     return H_total, (tgt_w, tgt_h)
     
+def find_sine_corner_list(aruco_corner_list, meta_dict, partial=True):
+    """
+    Gives the corner points of sine block according to aruco marker corner points
+    """
+    H_src2tsf = rec2rec_affine(meta_dict['aruco_xywhr'], aruco_corner_list, 
+                               partial=partial, reverse=False)
+    src_sine_corners = _ouv_to_corners(_xywhr_to_ouv(meta_dict['sine_xywhr'], True)).astype(float)
+    tsf_sine_corners = H_src2tsf @ np.pad(src_sine_corners.transpose(), ((0,1),(0,0)), mode='constant', constant_values=1)
+    tsf_sine_corners = np.array(tsf_sine_corners)[:2].transpose()
+    tsf_sine_corners = np.round(tsf_sine_corners).astype(int)
+    return tsf_sine_corners
+    
 def extract_sine_and_bw_tiles(img, aruco_corner_list, meta_dict, 
                               sine_oversample=16, bw_oversample=4,
                               partial=True, interp_flag=cv.INTER_CUBIC):
@@ -204,7 +223,8 @@ def extract_sine_and_bw_tiles(img, aruco_corner_list, meta_dict,
     src_pp = meta_dict['aruco_width_mm'] / meta_dict['aruco_xywhr'][2] # source pixel pitch in mm
     # prepare to split sine block to sine tile
     N_tile = len(meta_dict['lpmm_list'])
-    sine_block_ouv = _xywhr_to_ouv(meta_dict['sine_xywhr']) # origin-uvector-vvector
+    sine_block_ouv = _xywhr_to_ouv(meta_dict['sine_xywhr'], False) # origin-uvector-vvector
+                                                                   # for tile origins, no point_to_corner
     tile_w = meta_dict['sine_xywhr'][2]
     tile_h = meta_dict['sine_xywhr'][3]/N_tile
     tile_r = meta_dict['sine_xywhr'][4]
@@ -300,6 +320,28 @@ def estimate_mtf_from_sine_tile(sine_tile, lpmm, pp,
     mtf = np.sqrt(p_spec) # MTF is amplitude ratio, square root of power ratio
     
     return mtf
+
+##############################
+### draw information
+##############################
+def draw_sine_block_outline_and_mtf(img, sine_corner_list, lpmm_list, mtf_list, color=(0,255,0)):
+    """
+    sine_corner_list is a 4x2 np.int32 array, denoting the corners of a sine block, clockwise
+    """
+    # sine block geometry
+    text_x = sine_corner_list[:,0].max()
+    text_y = sine_corner_list[:,1].min()
+    h = sine_corner_list[:,1].max() - sine_corner_list[:,1].min()
+    
+    # mtf text
+    text_list = ['{:.3f}: {:.3f}'.format(lpmm, mtf) for lpmm, mtf in zip(lpmm_list, mtf_list)]
+    
+    # draw
+    img = draw_polylines(img, sine_corner_list.astype(np.int32), 
+                         True, (0, 255, 0), np.round(h/80).astype(int), cv.LINE_AA)
+    img = draw_multiline_text(img, text_list, (text_x, text_y), h)
+    
+    return img
 
 # def estimate_mtf_from_sine_tile(sine_tile, lpmm, pp, 
 #                                 comm_mode=0.5, diff_mode=0.5, 
