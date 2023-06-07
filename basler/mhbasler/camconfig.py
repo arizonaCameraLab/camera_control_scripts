@@ -124,7 +124,7 @@ def pickRequiredCameras(tlFactory, arrayParams):
     indexList = []
     for reqSn in arrayParams.keys():
         if not reqSn in devSnList:
-            raise pylon.RuntimeException('Device with SN {} is required by array but not attached.'.format(reqSn))
+            raise pylon.RuntimeException('Device with SN {} (name: {}) is required by array but not attached.'.format(reqSn, arrayParams[reqSn]['name']))
         neededDiList.append(diList[devSnList.index(reqSn)])
         indexList.append(arrayParams[reqSn]['index'])
 

@@ -35,6 +35,9 @@ from pypylon import pylon, genicam
 
 from .camconfig import configArrayIfParamChanges
 from target_toolbox.aruco_marker import draw_aruco_square_score, draw_aruco_coordinate
+from target_toolbox.aruco_sine_chart import extract_sine_and_bw_tiles, estimate_comm_diff_from_bw_tile, \
+                                            estimate_mtf_from_sine_tile, find_sine_corner_list, \
+                                            draw_sine_block_outline_and_mtf
 
 ########################################
 ### Camera livestream
@@ -129,6 +132,7 @@ def singleCamlivestream(camList, arrayParamsLoader, converter,
     if arucoSineMetas is not None:
         assert arucoDetector is not None, 'ArUco-Sine charts needs a arucoDetector'
         arucoSineIdxList = list(arucoSineMetas.keys())
+        #print(arucoSineIdxList)
     # other args
     dateFormat = '%Y%m%d_%H%M%S.%f'
 
@@ -174,17 +178,17 @@ def singleCamlivestream(camList, arrayParamsLoader, converter,
                 draw_aruco_coordinate(dispImg, cornerList)
         
         # ArUco-Sine charts
-        if arucoSineMetas is not None:
+        if arucoSineMetas is not None and len(cornerList) > 0:
             # loop each marker found
             for arucoCorner, arucoIdx in zip(cornerList, idList):
                 # see if the corner is in meta dict
-                if not (arucoIdx in arucoSineIdxList):
+                if not (str(arucoIdx[0]) in arucoSineIdxList):
                     continue
                 arucoCorner = np.array(arucoCorner, dtype=np.float32).reshape(4,2)
-                metaDict = arucoSineMetas[arucoIdx]
+                metaDict = arucoSineMetas[str(arucoIdx[0])]
                 # extract tiles
                 tileList, ppList, lpmmList = \
-                sextract_sine_and_bw_tiles(cv.cvtColor(frame, cv.COLOR_BGR2GRAY), 
+                extract_sine_and_bw_tiles(cv.cvtColor(img, cv.COLOR_BGR2GRAY), 
                                            arucoCorner, metaDict)
                 # calculate black/white contrast
                 bwTile = tileList[-1].astype(float)/255.0

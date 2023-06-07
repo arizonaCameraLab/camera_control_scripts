@@ -8,7 +8,7 @@
         "OffsetX": 8,
         "OffsetY": 8,
         "rot180": true,
-        "ExposureTime": 25000,
+        "ExposureTime": 8000,
         "Gain": 0,
         "DeviceLinkThroughputLimit": 330000000,
         "suffix": null
@@ -22,7 +22,7 @@
         "OffsetX": 8,
         "OffsetY": 8,
         "rot180": false,
-        "ExposureTime": 22000,
+        "ExposureTime": 9000,
         "Gain": 0,
         "DeviceLinkThroughputLimit": 330000000,
         "suffix": null
@@ -36,7 +36,7 @@
         "OffsetX": 8,
         "OffsetY": 8,
         "rot180": true,
-        "ExposureTime": 22000,
+        "ExposureTime": 400,
         "Gain": 0,
         "DeviceLinkThroughputLimit": 330000000,
         "suffix": null
@@ -50,7 +50,7 @@
         "OffsetX": 8,
         "OffsetY": 8,
         "rot180": false,
-        "ExposureTime": 19000,
+        "ExposureTime": 800,
         "Gain": 0,
         "DeviceLinkThroughputLimit": 330000000,
         "suffix": null
@@ -64,7 +64,7 @@
         "OffsetX": 8,
         "OffsetY": 8,
         "rot180": false,
-        "ExposureTime": 30000,
+        "ExposureTime": 800,
         "Gain": 0,
         "DeviceLinkThroughputLimit": 330000000,
         "suffix": null
@@ -78,7 +78,7 @@
         "OffsetX": 8,
         "OffsetY": 8,
         "rot180": true,
-        "ExposureTime": 23000,
+        "ExposureTime": 700,
         "Gain": 0,
         "DeviceLinkThroughputLimit": 330000000,
         "suffix": null
@@ -92,7 +92,7 @@
         "OffsetX": 8,
         "OffsetY": 8,
         "rot180": true,
-        "ExposureTime": 18000,
+        "ExposureTime": 600,
         "Gain": 0,
         "DeviceLinkThroughputLimit": 330000000,
         "suffix": null

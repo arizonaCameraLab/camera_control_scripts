@@ -54,7 +54,7 @@ def parseArguments():
                         help='Enable ArUco marker detection')
     parser.add_argument('--sine', dest='detect_aruco_sine', action='store_true',
                         help='Enable ArUco-Sine chart detection')
-    parser.add_argument('--sine_params', type=str, default='aruco_sine_params.json',
+    parser.add_argument('--sine_params', type=str, default='aruco_sine_chart_params.json',
                         help='The json file holding the ArUco-Sine chart parameters.')
     parser.add_argument('--hist', dest='show_hist', action='store_true',
                         help='Enable pixel value histogram.')
@@ -99,7 +99,7 @@ def main(args):
         hist_bins = args.bins
     # ArUco detector parameters
     aruco_detector = None
-    if args.detect_aruco:
+    if args.detect_aruco or args.detect_aruco_sine:
         aruco_parameter = cv.aruco.DetectorParameters()
         aruco_dict = cv.aruco.getPredefinedDictionary(ARUCO_DICT_TYPE)
         aruco_detector = cv.aruco.ArucoDetector(aruco_dict, aruco_parameter)
@@ -107,7 +107,7 @@ def main(args):
     arucoSineMetas = None
     if args.detect_aruco_sine:
         sineParamsLoader = RealTimeFileLoader(args.sine_params, jsonLoadFunc)
-        arucoSineMetas = arrayParamsLoader.load()
+        arucoSineMetas = sineParamsLoader.load()
 
     ### livestream cameras
     # the outer loop: switch between cameras
