@@ -1,5 +1,6 @@
 import numpy as np
 import cv2 as cv
+from .common import mm_to_pixels
 
 ##############################
 ### constants
@@ -37,10 +38,9 @@ ARUCO_DICT_TYPE = ARUCO_DICT_SET[ARUCO_DICT_TYPE_STR]
 ##############################
 ### marker generators
 ##############################
-
 def draw_aruco_marker(aruco_dict_type, index, length, dpi):
     # parse edge pixel length
-    side_pixels = np.round(dpi / 25.4 * length).astype(int)
+    side_pixels = mm_to_pixels(length, dpi)
 
     # load the ArUCo dictionary
     aruco_dict = cv.aruco.getPredefinedDictionary(aruco_dict_type)
@@ -53,7 +53,7 @@ def draw_aruco_marker(aruco_dict_type, index, length, dpi):
 
 def draw_aruco_desc_tile(aruco_dict_type_str, index, length, dpi):
     # parse edge pixel length
-    side_pixels = np.round(dpi / 25.4 * length).astype(int)
+    side_pixels = mm_to_pixels(length, dpi)
 
     # make description tile
     desc_str = '; '.join(['ArUco',
@@ -65,7 +65,7 @@ def draw_aruco_desc_tile(aruco_dict_type_str, index, length, dpi):
     text_canvas = np.full((text_canvas_height, side_pixels, 3), 
                           255, np.uint8)
     cv.putText(text_canvas, desc_str, 
-               (np.round(side_pixels*0.03).astype(int), np.round(text_canvas_height*0.8).astype(int)), 
+               (np.round(side_pixels*0.03).astype(int), np.round(text_canvas_height*0.72).astype(int)), 
                cv.FONT_HERSHEY_SIMPLEX, side_pixels*0.0012, 
                (0,0,0), np.round(side_pixels*0.003).astype(int), cv.LINE_AA, False)
     
