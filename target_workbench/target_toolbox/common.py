@@ -1,3 +1,4 @@
+import warnings
 import numpy as np
 import cv2 as cv
 
@@ -87,6 +88,9 @@ def draw_multiline_text(img, text_list, xy, total_height, color=(0,255,0)):
     text_list should be a list containing multiple lines. Each line is an element
     """
     N = len(text_list)
+    if total_height < N:
+        warnings.warn('total_height to small, skip drawing.')
+        return img
     x, y = xy
     local_x = int(np.round(x))
     for a, text in enumerate(text_list):
@@ -101,6 +105,8 @@ def draw_polylines(img, pts, isClosed, color, thickness=1, lineType=cv.LINE_AA, 
     OpenCV's own function is giving errors. Strange
     Reimplememt it
     """
+    if thickness < 1:
+        warnings.warn('Thickness less than 1, skip drawing.')
     pts_list = list(pts)
     if isClosed:
         pts_list = pts_list + [pts_list[0]]

@@ -84,9 +84,12 @@ def main(args):
     # pick required cameras
     tlFactory = pylon.TlFactory.GetInstance() # Get the transport layer factory.
     camList = pickRequiredCameras(tlFactory, arrayParams)
-    # converter to get opencv bgr format
+    # converter to get opencv bgr/grayscale format
     converter = pylon.ImageFormatConverter()
-    converter.OutputPixelFormat = pylon.PixelType_BGR8packed
+    if args.detect_aruco_sine: # detect grayscale for better resolution analysis
+        converter.OutputPixelFormat = pylon.PixelType_Mono8
+    else:
+        converter.OutputPixelFormat = pylon.PixelType_BGR8packed
     converter.OutputBitAlignment = pylon.OutputBitAlignment_MsbAligned
     # open and initialize camera parameters
     for cam in camList:

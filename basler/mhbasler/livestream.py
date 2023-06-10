@@ -159,8 +159,11 @@ def singleCamlivestream(camList, arrayParamsLoader, converter,
             grabTime0 = grabTime1
 
         ### add overlays to image
-        # fps
         dispImg = np.copy(img)
+        if len(dispImg.shape) == 2: # if grayscale, to RGB for better text drawing
+            dispImg = cv.cvtColor(dispImg, cv.COLOR_GRAY2BGR)
+            
+        # fps
         if showFps:
             h, w, _ = dispImg.shape
             fpsStr = 'Frame {:d}, fps {:.2f}'.format(frameCount, fps)
