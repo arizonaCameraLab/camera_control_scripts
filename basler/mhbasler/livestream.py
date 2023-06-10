@@ -180,7 +180,7 @@ def singleCamlivestream(camList, arrayParamsLoader, converter,
                 draw_aruco_square_score(dispImg, cornerList)
                 draw_aruco_coordinate(dispImg, cornerList)
         
-        # ArUco-Sine charts
+        # ArUco-Sine charts, note that img is aready grayscale
         if arucoSineMetas is not None and len(cornerList) > 0:
             # loop each marker found
             for arucoCorner, arucoIdx in zip(cornerList, idList):
@@ -191,8 +191,7 @@ def singleCamlivestream(camList, arrayParamsLoader, converter,
                 metaDict = arucoSineMetas[str(arucoIdx[0])]
                 # extract tiles
                 tileList, ppList, lpmmList = \
-                extract_sine_and_bw_tiles(cv.cvtColor(img, cv.COLOR_BGR2GRAY), 
-                                           arucoCorner, metaDict)
+                extract_sine_and_bw_tiles(img, arucoCorner, metaDict)
                 # calculate black/white contrast
                 bwTile = tileList[-1].astype(float)/255.0
                 commMode, diffMode = estimate_comm_diff_from_bw_tile(bwTile)
