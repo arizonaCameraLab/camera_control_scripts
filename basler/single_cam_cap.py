@@ -12,6 +12,7 @@ Known issue:
 
 import os
 import sys
+import time
 import argparse
 import logging
 from logging import critical, error, info, warning, debug
@@ -45,6 +46,8 @@ def parseArguments():
                         help='Save mode. 4bit-left would move 12-bit image left 4 bits, to 16-bit.')
 #    parser.add_argument('--instant_save', action='store_true',
 #                        help='Save while capturing, would probably lower fps.')
+    parser.add_argument('--start_ns', type=int, default=0,
+                        help='Capture starting Unix time in ns. Default 0 (instant start)')
     parser.add_argument('-f', '--folder', type=str, default=None,
                         help='saving folder. Default \'<camName>_<time>\'. Create if not exist')
     parser.add_argument('-v', '--verbose', type=int, default=1, 
@@ -105,6 +108,11 @@ def main(args):
     setCamParams(cam, camParams, None)
     # use chunk grab mode
     enableChunk(cam)
+
+    ### wait until the start time
+    print('{} waiting'.format(camName))
+    while time.time_ns() < args.start_ns:
+        pass
 
     ### grab frames
     print('{} capturing starts'.format(camName))

@@ -8,9 +8,9 @@
         "OffsetX": 8,
         "OffsetY": 8,
         "rot180": true,
-        "ExposureTime": 8000,
+        "ExposureTime": 3500,
         "Gain": 0,
-        "DeviceLinkThroughputLimit": 330000000,
+        "DeviceLinkThroughputLimit": 300000000,
         "suffix": null
     },
     "40221719": {
@@ -22,9 +22,9 @@
         "OffsetX": 8,
         "OffsetY": 8,
         "rot180": false,
-        "ExposureTime": 9000,
+        "ExposureTime": 2000,
         "Gain": 0,
-        "DeviceLinkThroughputLimit": 330000000,
+        "DeviceLinkThroughputLimit": 300000000,
         "suffix": null
     },
     "40221721": {
@@ -36,9 +36,9 @@
         "OffsetX": 8,
         "OffsetY": 8,
         "rot180": true,
-        "ExposureTime": 400,
+        "ExposureTime": 2000,
         "Gain": 0,
-        "DeviceLinkThroughputLimit": 330000000,
+        "DeviceLinkThroughputLimit": 300000000,
         "suffix": null
     },
     "40221715": {
@@ -50,9 +50,9 @@
         "OffsetX": 8,
         "OffsetY": 8,
         "rot180": false,
-        "ExposureTime": 800,
+        "ExposureTime": 1000,
         "Gain": 0,
-        "DeviceLinkThroughputLimit": 330000000,
+        "DeviceLinkThroughputLimit": 300000000,
         "suffix": null
     },
     "40221720": {
@@ -64,9 +64,9 @@
         "OffsetX": 8,
         "OffsetY": 8,
         "rot180": false,
-        "ExposureTime": 800,
+        "ExposureTime": 2000,
         "Gain": 0,
-        "DeviceLinkThroughputLimit": 330000000,
+        "DeviceLinkThroughputLimit": 300000000,
         "suffix": null
     },
     "40221716": {
@@ -78,9 +78,9 @@
         "OffsetX": 8,
         "OffsetY": 8,
         "rot180": true,
-        "ExposureTime": 700,
+        "ExposureTime": 2000,
         "Gain": 0,
-        "DeviceLinkThroughputLimit": 330000000,
+        "DeviceLinkThroughputLimit": 300000000,
         "suffix": null
     },
     "40221718": {
@@ -92,9 +92,9 @@
         "OffsetX": 8,
         "OffsetY": 8,
         "rot180": true,
-        "ExposureTime": 600,
+        "ExposureTime": 2000,
         "Gain": 0,
-        "DeviceLinkThroughputLimit": 330000000,
+        "DeviceLinkThroughputLimit": 300000000,
         "suffix": null
     }
 }
