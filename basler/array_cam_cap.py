@@ -13,6 +13,7 @@ Known issue:
 
 import os
 import sys
+import time
 import subprocess
 import shutil
 import argparse
@@ -39,11 +40,13 @@ def parseArguments():
     parser.add_argument('-m', '--save_mode', type=str, choices=['raw', 'rgb', '4bit-left'], default='raw',
                         help='Save mode. 4bit-left would move 12-bit image left 4 bits, to 16-bit.')
     parser.add_argument('-f', '--folder', type=str, default='array_cap',
-                        help='saving folder. Default \'array_cap\', timestamp auto appended. Create if not exist')
+                        help='Saving folder. Default \'array_cap\', timestamp auto appended. Create if not exist')
+    parser.add_argument('-w', '--wait', type=float, default=2.0,
+                        help='Waiting time in seconds before capture starts.')
     parser.add_argument('-v', '--verbose', type=int, default=1, 
                         help='Verbosity of logging: 0-critical, 1-error, 2-warning, 3-info, 4-debug')
     parser.add_argument('--dryrun', action='store_true',
-                        help='generate commands recipe instead of run commands.')
+                        help='Generate commands recipe instead of run commands.')
     ### parse args
     args = parser.parse_args()
     ### set logging
@@ -55,7 +58,9 @@ def parseArguments():
 
 def main(args):
     # parameters
+    wait_ns = int(args.wait * 1e9)
     dateFormat = '%Y%m%d_%H%M%S.%f'
+    start_ns = time.time_ns() + wait_ns
     startTime = datetime.now()
     folder_name = args.folder + '_' + startTime.strftime(dateFormat)[:-4]
     
@@ -64,7 +69,8 @@ def main(args):
     cmd_tail = ' '.join(['-n {}'.format(args.amount),
                          '-p {}'.format(args.params), 
                          '-m {}'.format(args.save_mode), 
-                         '-v {}'.format(args.verbose)])
+                         '-v {}'.format(args.verbose),
+                         '--start_ns {}'.format(start_ns)])
     cmd_list = []
     for idx in args.cam_ind_list:
         ind_str = '-c {}'.format(idx)
