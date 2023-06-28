@@ -15,7 +15,7 @@ def dpi_to_pp(dpi):
     return 25.4 / dpi
 
 def pp_to_dpi(pp):
-    return 25.4 * pp
+    return 25.4 / pp
 
 def center_crop_pad_to(arr, w, dim, const_value=0):
     w_ori = arr.shape[dim]
@@ -107,6 +107,7 @@ def draw_polylines(img, pts, isClosed, color, thickness=1, lineType=cv.LINE_AA, 
     """
     if thickness < 1:
         warnings.warn('Thickness less than 1, skip drawing.')
+        return img
     pts_list = list(pts)
     if isClosed:
         pts_list = pts_list + [pts_list[0]]

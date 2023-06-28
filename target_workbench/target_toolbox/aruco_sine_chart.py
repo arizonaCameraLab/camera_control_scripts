@@ -287,24 +287,34 @@ def estimate_comm_diff_from_bw_tile(bw_tile, bezel_ratio=0.1):
     return comm_mode, diff_mode
 
 def estimate_mtf_from_sine_tile(sine_tile, lpmm, pp, 
-                                comm_mode=0.5, diff_mode=0.5, 
-                                freq_diff_ratio=0.15, bezel_ratio=0.1
+                                comm_mode=None, diff_mode=0.5, 
+                                freq_diff_ratio=0.15, bezel_ratio=0.1,
+                                full_periods=True
                                ):
     """
-    sine_tile:       a MxN 0-1 float array, sine wave along horizontal direction
-    lpmm:            spatial frequency of that sine wave in lp/mm
+    sine_tile:       a MxN 0-1 float array, blurred sine wave along horizontal direction
+    lpmm:            spatial frequency of the original sine wave in lp/mm
     pp:              pixel pitch of input tile in mm
     comm/diff_mode:  common/differential mode estimated from bw tile, 
-                     eliminates error from illumination/exposure/etc
+                     eliminates error from illumination/exposure/etc.
+                     if comm_mode is None, estimate it as the mean of the input
     freq_diff_ratio: the ratio of difference tolerance, defines the integration window
                      0.15 is about 9 degrees rotation
     bezel_ratio:     bezel width ratio to remove
                      allows slightly tilting/distortion
+    full_periods:    if True, truncate the tile to full periods after removing bezel
     """
     # preprocess and parse parameter
     tile = remove_bezel(sine_tile, bezel_ratio) # remove bezel
-    tile = (tile - comm_mode) / diff_mode # make zero-mean, normalize scale
+    if full_periods: # truncate to full period
+        period_pix = 1/lpmm/pp
+        tile_w = tile.shape[1]
+        new_w = (np.floor(tile_w/period_pix)*period_pix).astype(int)
+        tile = center_crop_pad_to(tile, new_w, 1)
     tile_h, tile_w = tile.shape[:2]
+    if comm_mode is None: # parse common mode
+        comm_mode = tile.mean()
+    tile = (tile - comm_mode) / diff_mode # make zero-mean, normalize scale
     lpmm_whw = lpmm * freq_diff_ratio
     
     # fft to spectrum
