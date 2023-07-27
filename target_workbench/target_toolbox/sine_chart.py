@@ -4,7 +4,16 @@ import cv2 as cv
 from scipy.stats import norm as sp_norm
 from .common import mm_to_pixels, center_crop_pad_to
 
-def draw_sine_tile(lpmm, length, height, dpi, subpix_amount=101, scale_to_01=True):
+def draw_sine_tile(lpmm, length, height, dpi, subpix_amount=101, scale_to_full=True):
+    """
+    Draw a sine pattern tile with certain length, height, and line pair per mm
+    Args:
+        lpmm (float): line pair per mm
+        length, height (float): tile length and height in mm
+        dpi (float): dots per inch, easier to work with printers
+        subpix_amount (int): how many subpixels to integrate to form one pixel. Better to be odd.
+        scale_to_full (bool): whether scaling the output to 0-255
+    """
     # check subpix
     if not (subpix_amount<=1 or subpix_amount%2 == 1):
         warnings.warn('Subpixel amount is even. Recommended to be odd for certering.')
@@ -35,7 +44,7 @@ def draw_sine_tile(lpmm, length, height, dpi, subpix_amount=101, scale_to_01=Tru
     y_list = (y_list + 1) / 2
     
     # scale to 0-1 if needed
-    if scale_to_01:
+    if scale_to_full:
         y_list = (y_list-y_list.min())/(y_list.max()-y_list.min())
     y_list = np.clip(y_list, 0, 1)
     

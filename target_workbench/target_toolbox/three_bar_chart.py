@@ -67,7 +67,7 @@ def resolution_element(lw, sf):
     hlines = three_line_square(lw, sf)
     vlines = np.transpose(hlines)
     w = hlines.shape[0]
-    text = '{:d}'.format(lw) if isinstance(lw, int) else '{:.1f}'.format(lw)
+    text = '{:d}'.format(lw) if isinstance(lw, int) else '{:.1f}'.format(lw).lstrip('0')
     num = text_square(w, text)
     gap = np.zeros((w, w//5), dtype=hlines.dtype)
     return np.concatenate([vlines, gap, hlines, gap, num], axis=1)

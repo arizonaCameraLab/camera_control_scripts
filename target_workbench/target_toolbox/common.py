@@ -12,9 +12,11 @@ def pixels_to_mm(x, dpi):
     return x / dpi * 25.4
 
 def dpi_to_pp(dpi):
+    """Note that pixel pitch here is in mm"""
     return 25.4 / dpi
 
 def pp_to_dpi(pp):
+    """Note that pixel pitch here is in mm"""
     return 25.4 / pp
 
 def center_crop_pad_to(arr, w, dim, const_value=0):

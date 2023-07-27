@@ -310,6 +310,7 @@ def estimate_mtf_from_sine_tile(sine_tile, lpmm, pp,
         period_pix = 1/lpmm/pp
         tile_w = tile.shape[1]
         new_w = (np.floor(tile_w/period_pix)*period_pix).astype(int)
+        assert new_w > 0, 'Tile width less than one period'
         tile = center_crop_pad_to(tile, new_w, 1)
     tile_h, tile_w = tile.shape[:2]
     if comm_mode is None: # parse common mode
