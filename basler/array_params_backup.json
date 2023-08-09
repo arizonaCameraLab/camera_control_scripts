@@ -8,9 +8,10 @@
         "OffsetX": 8,
         "OffsetY": 8,
         "rot180": true,
-        "ExposureTime": 25000,
+        "ExposureTime": 30000,
         "Gain": 0,
-        "DeviceLinkThroughputLimit": 330000000,
+        "AcquisitionFrameRate": 30.0,
+        "DeviceLinkThroughputLimit": 300000000,
         "suffix": null
     },
     "40221719": {
@@ -22,9 +23,10 @@
         "OffsetX": 8,
         "OffsetY": 8,
         "rot180": false,
-        "ExposureTime": 22000,
+        "ExposureTime": 30000,
         "Gain": 0,
-        "DeviceLinkThroughputLimit": 330000000,
+        "AcquisitionFrameRate": 30.0,
+        "DeviceLinkThroughputLimit": 300000000,
         "suffix": null
     },
     "40221721": {
@@ -36,9 +38,10 @@
         "OffsetX": 8,
         "OffsetY": 8,
         "rot180": true,
-        "ExposureTime": 22000,
+        "ExposureTime": 30000,
         "Gain": 0,
-        "DeviceLinkThroughputLimit": 330000000,
+        "AcquisitionFrameRate": 30.0,
+        "DeviceLinkThroughputLimit": 300000000,
         "suffix": null
     },
     "40221715": {
@@ -50,9 +53,10 @@
         "OffsetX": 8,
         "OffsetY": 8,
         "rot180": false,
-        "ExposureTime": 19000,
+        "ExposureTime": 30000,
         "Gain": 0,
-        "DeviceLinkThroughputLimit": 330000000,
+        "AcquisitionFrameRate": 30.0,
+        "DeviceLinkThroughputLimit": 300000000,
         "suffix": null
     },
     "40221720": {
@@ -66,7 +70,8 @@
         "rot180": false,
         "ExposureTime": 30000,
         "Gain": 0,
-        "DeviceLinkThroughputLimit": 330000000,
+        "AcquisitionFrameRate": 30.0,
+        "DeviceLinkThroughputLimit": 300000000,
         "suffix": null
     },
     "40221716": {
@@ -78,9 +83,10 @@
         "OffsetX": 8,
         "OffsetY": 8,
         "rot180": true,
-        "ExposureTime": 23000,
+        "ExposureTime": 30000,
         "Gain": 0,
-        "DeviceLinkThroughputLimit": 330000000,
+        "AcquisitionFrameRate": 30.0,
+        "DeviceLinkThroughputLimit": 300000000,
         "suffix": null
     },
     "40221718": {
@@ -92,9 +98,10 @@
         "OffsetX": 8,
         "OffsetY": 8,
         "rot180": true,
-        "ExposureTime": 18000,
+        "ExposureTime": 30000,
         "Gain": 0,
-        "DeviceLinkThroughputLimit": 330000000,
+        "AcquisitionFrameRate": 30.0,
+        "DeviceLinkThroughputLimit": 300000000,
         "suffix": null
     }
 }

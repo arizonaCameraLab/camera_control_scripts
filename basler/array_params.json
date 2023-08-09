@@ -8,8 +8,9 @@
         "OffsetX": 8,
         "OffsetY": 8,
         "rot180": true,
-        "ExposureTime": 3500,
+        "ExposureTime": 30000,
         "Gain": 0,
+        "AcquisitionFrameRate": 30.0,
         "DeviceLinkThroughputLimit": 300000000,
         "suffix": null
     },
@@ -22,8 +23,9 @@
         "OffsetX": 8,
         "OffsetY": 8,
         "rot180": false,
-        "ExposureTime": 2000,
+        "ExposureTime": 30000,
         "Gain": 0,
+        "AcquisitionFrameRate": 30.0,
         "DeviceLinkThroughputLimit": 300000000,
         "suffix": null
     },
@@ -36,8 +38,9 @@
         "OffsetX": 8,
         "OffsetY": 8,
         "rot180": true,
-        "ExposureTime": 2000,
+        "ExposureTime": 30000,
         "Gain": 0,
+        "AcquisitionFrameRate": 30.0,
         "DeviceLinkThroughputLimit": 300000000,
         "suffix": null
     },
@@ -50,8 +53,9 @@
         "OffsetX": 8,
         "OffsetY": 8,
         "rot180": false,
-        "ExposureTime": 1000,
+        "ExposureTime": 30000,
         "Gain": 0,
+        "AcquisitionFrameRate": 30.0,
         "DeviceLinkThroughputLimit": 300000000,
         "suffix": null
     },
@@ -64,8 +68,9 @@
         "OffsetX": 8,
         "OffsetY": 8,
         "rot180": false,
-        "ExposureTime": 2000,
+        "ExposureTime": 30000,
         "Gain": 0,
+        "AcquisitionFrameRate": 30.0,
         "DeviceLinkThroughputLimit": 300000000,
         "suffix": null
     },
@@ -78,8 +83,9 @@
         "OffsetX": 8,
         "OffsetY": 8,
         "rot180": true,
-        "ExposureTime": 2000,
+        "ExposureTime": 30000,
         "Gain": 0,
+        "AcquisitionFrameRate": 30.0,
         "DeviceLinkThroughputLimit": 300000000,
         "suffix": null
     },
@@ -92,8 +98,9 @@
         "OffsetX": 8,
         "OffsetY": 8,
         "rot180": true,
-        "ExposureTime": 2000,
+        "ExposureTime": 30000,
         "Gain": 0,
+        "AcquisitionFrameRate": 30.0,
         "DeviceLinkThroughputLimit": 300000000,
         "suffix": null
     }

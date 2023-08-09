@@ -38,6 +38,8 @@ from pypylon import pylon, genicam
 def jsonLoadFunc(plp):
     """
     This function takes in a pathlib Path of a json file and load it
+    Args:
+        plp: pathlib Path object
     """
     if not plp.exists():
         raise RuntimeError("No such file: {:s}".format(plp))
@@ -50,7 +52,12 @@ class RealTimeFileLoader():
     A class that will check the status of a certain file
     Can check if the file is changed after last load
     """
-    def __init__(self, filePath, loadFunc):
+    def __init__(self, filePath:str, loadFunc):
+        """
+        Args:
+            filepath: string, file path
+            loadFunc: a function to load the content of the file
+        """
         # load file path
         self.plp = pathlib.Path(filePath)
         if not self.plp.exists():
@@ -144,7 +151,7 @@ def pickRequiredCameras(tlFactory, arrayParams):
 ### Camera "in-file" feature configuration
 ########################################
 nonStopParamList = ('ExposureTime', 'Gain', 'DeviceLinkThroughputLimit')
-stopParamList = ('Width', 'Height', 'OffsetX', 'OffsetY', 'rot180', 'PixelFormat')
+stopParamList = ('Width', 'Height', 'OffsetX', 'OffsetY', 'rot180', 'PixelFormat', 'AcquisitionFrameRate')
 
 def _checkCacheDeco(func):
     """
@@ -258,7 +265,24 @@ def _setCamPixelFormat(cam, camName, v):
     # set value and report
     cam.PixelFormat.FromString(v)
     debug('Set {}\'s PixelFormat to {}'.format(camName, v))
-
+    
+def _setCamFramerate(cam, camName:str, v:float):
+    """
+    Set camera's framerate
+    Args:
+        cam: an open instant camera object
+        camName: string, for report
+        v: value of targeting framerate, float. 
+           If not positive, disable framerate
+    """
+    if v <= 0:
+        cam.AcquisitionFrameRateEnable.SetValue(False)
+        debug('Disable {}\'s framerate control')
+    else:
+        cam.AcquisitionFrameRateEnable.SetValue(True)
+        debug('Enable {}\'s framerate control')
+        _setCamNumValue(cam, camName, 'AcquisitionFrameRate', v)
+    
 @_checkCacheDeco
 @_breakGrabbingWhenNeeded
 def _setCamParam(cam, camName, paramName, v):
@@ -275,6 +299,8 @@ def _setCamParam(cam, camName, paramName, v):
         _setCamRot(cam, camName, v)
     elif paramName == 'PixelFormat':
         _setCamPixelFormat(cam, camName, v)
+    elif paramName == 'AcquisitionFrameRate':
+        _setCamFramerate(cam, camName, v)
     else:
         _setCamNumValue(cam, camName, paramName, v)
 
