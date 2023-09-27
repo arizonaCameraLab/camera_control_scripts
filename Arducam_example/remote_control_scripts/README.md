@@ -12,6 +12,7 @@ The remote control script allows you to control a 16-camera array, controlled by
    - It can ssh to all the 4 Jetson nanos, passwordlessly
    - It has configured the 4 Jetson nanos as Host cam1, cam2, cam3, cam4 within the `.ssh/config` file, and allows X11Forwarding
    - It has all the scripts in the `Arducam_example/remote_control_scripts/control_machine_side` folder
+   - There are `cam1`, `cam2`, `cam3`, `cam4` folders in `~/Downloads` folder
 
 ## Test the system
 On the control machine, open a terminal, go to the folder containing the scripts, run    
@@ -31,6 +32,6 @@ With the daemon scheme, we don't need to initialize the camera every time we cap
 ## Run remote capture
  1. Make sure all Jetsons have their camera available. If another program, like `displayer.py`, is using the camera, then the daemon won't start.
  2. On the control machine, run `bash start_cam.sh`, which will start the camera daemon on all 4 Jetson Nanos.
- 3. On the control machine, run `bash capture_a_frame.sh`. That script will trigger a burst shot on all 4 Jetson Nanos. `bash capture_a_frame.sh` takes one argument, which is the output folder prefix. You can also manually change the `-e` argument within the script for exposure, and `-n` argument for the amount of bursts.
- 4. After all captures are finished, on the control machine, run `transfer_data.sh`, which will transfer the capture frames to the control machine's `~/Downloads/` folder, and delete the frames on the Jetson Nanos. `transfer_data.sh` takes one argument, which is the frame folder's prefix.
+ 3. On the control machine, run `bash capture_a_frame.sh`. That script will trigger a burst shot on all 4 Jetson Nanos. `bash capture_a_frame.sh` takes one argument, which is the output file prefix. You can also manually change the `-e` argument within the script for exposure, and `-n` argument for the amount of bursts.
+ 4. After all captures are finished, on the control machine, run `transfer_data.sh`, which will transfer the capture frames to the control machine's `~/Downloads/camX` folder, and delete the frames on the Jetson Nanos. `transfer_data.sh` takes one argument, which is the frame file's prefix, should be the same as the one speficied in step 3.
  5. After all frames are saved, on the control machine, run `close_cam.sh`, which will stop the daemons on all 4 Jetson Nanos.
