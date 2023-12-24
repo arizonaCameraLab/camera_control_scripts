@@ -4,8 +4,8 @@
 The script has been tested on a Jetson AGX Orin Developer Kit with JetPack 5.0.1 (nvidia-l4t-core	34.1.1), an Intel x86-64 laptop with Ubuntu 22.04, and an Intel x86-64 desktop with USB expansion cards and Ubuntu 22.04.   
 The array camera tested consists 1 Basler daa3840-45uc and 6 Basler daa3840-45um.
 
-### Install Miniconda for package management
-Follow [conda's document](https://docs.conda.io/en/latest/miniconda.html).
+### Install Miniforge3 for package management
+Follow [Miniforge3 GitHub repo's instruction](https://github.com/conda-forge/miniforge). Miniforge3 uses mamba as default solver and conda-forge as default channel.
 
 ### Install Basler Pylon SDK
 Follow [Pylon instruction](https://www.baslerweb.com/en/products/basler-pylon-camera-software-suite/)
@@ -13,11 +13,11 @@ and check [Pypylon GitHub repo](https://github.com/basler/pypylon).
 
 ### Create Basler conda environment
 ```
-conda create -n basler python pip numpy scipy pillow h5py matplotlib
+conda create -n basler python=VERSION pip numpy scipy pillow h5py matplotlib parallel
 conda activate basler
-conda install parallel -c conda-forge
 pip install pypylon opencv-python
 ```
+Note that `pypylon` maynot support latesest `python`, thus we may need to specify a legacy `python` version.   
 Note that for the laptop/desktop mentioned before, `matplotlib` has to be installed via `pip`. Otherwise, there will be errors during display.
 I guess `opencv-python` installed via `pip` expects a certain version version of `pyqt5`, and if you install `matplotlib` via `conda`,
 the `pyqt5` version would be different and won't work good.
